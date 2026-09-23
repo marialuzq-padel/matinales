@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#4a6fa5">
+<title>Matinales de Pádel</title>
+<style>
+:root{
+  --bg:#f5f6fa; --card:#ffffff; --text:#27324a; --muted:#7a8398; --line:#e7eaf1;
+  --primary:#4a6fa5; --primary-soft:#e3ecf8;
+  --mint:#dcf3e8; --mint-strong:#2f8f67;
+  --peach:#ffe9d9; --peach-strong:#c0622a;
+  --lav:#ece7fb; --lav-strong:#6a55b8;
+  --rose:#fde3e6; --rose-strong:#b4424f;
+  --gold:#fff4c7; --silver:#eef1f5; --bronze:#fbe7d6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);padding-bottom:84px;font-size:15px;line-height:1.4}
+header{background:var(--primary);color:#fff;padding:14px 16px 12px;text-align:center}
+header h1{font-size:1.25rem;font-weight:800;letter-spacing:-.3px}
+header .sub{font-size:.78rem;opacity:.85;margin-top:2px}
+.container{max-width:620px;margin:0 auto;padding:14px 12px}
+.view{display:none}.view.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.card h2{font-size:1.02rem;margin-bottom:10px;color:var(--primary)}
+.card h3{font-size:.92rem;margin:12px 0 6px;color:var(--text)}
+.muted{color:var(--muted);font-size:.85rem}
+.small{font-size:.78rem}
+label{display:block;font-size:.82rem;font-weight:600;margin:8px 0 4px}
+input,select{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:1rem;background:#fff;color:var(--text);outline:none}
+input:focus,select:focus{border-color:var(--primary)}
+input[type=checkbox]{width:20px;height:20px;accent-color:var(--primary)}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:1}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 14px;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;background:var(--primary);color:#fff;width:100%;margin-top:10px}
+.btn.sec{background:var(--primary-soft);color:var(--primary)}
+.btn.mint{background:var(--mint);color:var(--mint-strong)}
+.btn.peach{background:var(--peach);color:var(--peach-strong)}
+.btn.rose{background:var(--rose);color:var(--rose-strong)}
+.btn.sm{width:auto;padding:7px 10px;font-size:.8rem;margin-top:0}
+.btn.big{padding:18px;font-size:1.05rem}
+.btn:disabled{opacity:.5}
+.chip{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.72rem;font-weight:700;background:var(--silver);color:var(--muted);white-space:nowrap}
+.chip.mint{background:var(--mint);color:var(--mint-strong)}
+.chip.peach{background:var(--peach);color:var(--peach-strong)}
+.chip.lav{background:var(--lav);color:var(--lav-strong)}
+.chip.rose{background:var(--rose);color:var(--rose-strong)}
+.chip.blue{background:var(--primary-soft);color:var(--primary)}
+.banner{border-radius:14px;padding:14px 16px;margin-bottom:14px;background:var(--peach);color:#6b3512;border:1px solid #f6d2b8}
+.banner b{display:block;font-size:1rem;margin-bottom:4px}
+.list-item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+.list-item:last-child{border-bottom:none}
+.list-item .name{font-weight:600}
+.rank-row{display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid var(--line);border-radius:8px}
+.rank-row .pos{width:28px;text-align:center;font-weight:800;color:var(--muted)}
+.rank-row .who{flex:1;min-width:0}
+.rank-row .who .n{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-row .pts{background:var(--primary-soft);color:var(--primary);font-weight:800;padding:4px 10px;border-radius:14px;min-width:46px;text-align:center}
+.rank-row.p1{background:var(--gold)}.rank-row.p2{background:var(--silver)}.rank-row.p3{background:var(--bronze)}
+.rank-row.me{outline:2px solid var(--primary);outline-offset:-2px}
+.seg{display:flex;background:var(--silver);border-radius:10px;padding:3px;margin-bottom:10px}
+.seg button{flex:1;border:none;background:none;padding:8px;border-radius:8px;font-weight:700;color:var(--muted);font-size:.88rem}
+.seg button.on{background:#fff;color:var(--primary);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.court{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px;background:#fafbfd}
+.court .t{font-weight:800;font-size:.8rem;color:var(--primary);text-transform:uppercase;margin-bottom:6px;display:flex;justify-content:space-between}
+.court .teams{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center}
+.court .vs{font-weight:900;color:var(--peach-strong);font-size:.85rem}
+.slot{display:block;width:100%;padding:8px;border-radius:8px;background:#fff;border:1.5px solid var(--line);font-size:.85rem;text-align:center;margin:3px 0;color:var(--text)}
+button.slot{cursor:pointer}
+.slot.sel{border-color:var(--peach-strong);background:var(--peach)}
+.slot.mine{background:var(--mint);border-color:#b7e3cd;font-weight:700}
+.lvl{font-size:.7rem;color:var(--muted);margin-left:3px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--silver);border-radius:10px;padding:10px 6px;text-align:center}
+.stat .v{font-size:1.3rem;font-weight:800;color:var(--primary)}
+.stat .l{font-size:.7rem;color:var(--muted)}
+nav.bottom{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:10}
+nav.bottom button{flex:1;border:none;background:none;padding:9px 2px 8px;font-size:.68rem;color:var(--muted);font-weight:600;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav.bottom button .i{font-size:1.25rem}
+nav.bottom button.on{color:var(--primary)}
+.subtabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px}
+.subtabs button{border:1px solid var(--line);background:#fff;border-radius:20px;padding:7px 12px;font-weight:700;font-size:.82rem;color:var(--muted);white-space:nowrap}
+.subtabs button.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+#toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:#27324a;color:#fff;padding:10px 16px;border-radius:10px;font-size:.9rem;display:none;z-index:50;max-width:90%;text-align:center}
+.hidden{display:none!important}
+.center{text-align:center}
+.empty{text-align:center;color:var(--muted);padding:14px;font-size:.9rem}
+.alert{background:var(--lav);color:var(--lav-strong);border-radius:10px;padding:10px 12px;font-size:.86rem;margin-top:8px}
+.num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);font-weight:800;font-size:.75rem;flex:none}
+.inline-lvl{width:70px;padding:6px;text-align:center;font-weight:700}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎾 Matinales de Pádel</h1>
+  <div class="sub" id="hdr-sub">Americanas · Ranking en vivo</div>
+</header>
+
+<div class="container">
+
+  <!-- ============ INICIO ============ -->
+  <section class="view active live" id="v-inicio">
+    <div id="ini-banner"></div>
+    <div id="ini-jornada"></div>
+    <div id="ini-resultado"></div>
+    <div id="ini-top"></div>
+  </section>
+
+  <!-- ============ RANKING ============ -->
+  <section class="view live" id="v-ranking">
+    <div class="card">
+      <div class="seg">
+        <button data-act="rankMode" data-v="puntos" id="seg-puntos" class="on">🏆 Puntos</button>
+        <button data-act="rankMode" data-v="asistencia" id="seg-asistencia">📅 Asistencia</button>
+      </div>
+      <select id="rank-temp"></select>
+      <div id="rank-info" class="muted small" style="margin:8px 0"></div>
+      <div id="rank-list"></div>
+    </div>
+  </section>
+
+  <!-- ============ AMERICANA ============ -->
+  <section class="view live" id="v-americana">
+    <div id="ame-content"></div>
+  </section>
+
+  <!-- ============ PERFIL ============ -->
+  <section class="view" id="v-perfil">
+    <div id="perfil-live" class="live"></div>
+
+    <div id="perfil-forms">
+      <div class="card" id="f-login">
+        <h2>Entrar</h2>
+        <label>Teléfono</label><input id="li-tel" type="tel" inputmode="numeric" placeholder="600123456">
+        <label>PIN (4 cifras)</label><input id="li-pin" type="password" inputmode="numeric" maxlength="4" placeholder="••••">
+        <button class="btn" data-act="login">Entrar</button>
+        <p class="muted small" style="margin-top:8px">¿Has olvidado el PIN? Díselo a Luz y te lo reinicia.</p>
+      </div>
+      <div class="card" id="f-registro">
+        <h2>¿Primera vez? Date de alta</h2>
+        <label>Nombre y apellido</label><input id="rg-nombre" placeholder="Ej: Laura Martínez">
+        <label>Teléfono</label><input id="rg-tel" type="tel" inputmode="numeric" placeholder="600123456">
+        <div class="row">
+          <div><label>Elige un PIN</label><input id="rg-pin" type="password" inputmode="numeric" maxlength="4" placeholder="4 cifras"></div>
+          <div><label>Repite el PIN</label><input id="rg-pin2" type="password" inputmode="numeric" maxlength="4" placeholder="4 cifras"></div>
+        </div>
+        <button class="btn mint" data-act="registro">Solicitar alta</button>
+        <p class="muted small" style="margin-top:8px">Luz revisará tu alta antes de que puedas apuntarte.</p>
+      </div>
+      <div class="card" id="f-admin">
+        <h2>Acceso administradora</h2>
+        <label>Email</label><input id="ad-email" type="email" autocomplete="username">
+        <label>Contraseña</label><input id="ad-pass" type="password" autocomplete="current-password">
+        <button class="btn sec" data-act="loginAdmin">Entrar como administradora</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ADMIN ============ -->
+  <section class="view" id="v-admin">
+    <div class="subtabs">
+      <button data-act="admTab" data-v="jornada" class="on">🎾 Americana</button>
+      <button data-act="admTab" data-v="resultados">✅ Resultados <span id="adm-badge-res"></span></button>
+      <button data-act="admTab" data-v="jugadores">👥 Jugadores <span id="adm-badge-sol"></span></button>
+      <button data-act="admTab" data-v="temporadas">🗓️ Temporadas</button>
+    </div>
+
+    <!-- Jornada -->
+    <div class="adm" id="adm-jornada">
+      <div class="card">
+        <h2>Nueva americana</h2>
+        <div class="row">
+          <div><label>Fecha</label><input type="date" id="nj-fecha"></div>
+          <div><label>Hora</label><input type="time" id="nj-hora" value="09:30"></div>
+        </div>
+        <label class="row" style="justify-content:flex-start;gap:10px;margin-top:12px"><input type="checkbox" id="nj-ultima" style="flex:none"> <span>🏁 Última americana del ranking</span></label>
+        <button class="btn" data-act="crearJornada">Crear americana</button>
+      </div>
+      <div class="card">
+        <h2>Gestionar americana</h2>
+        <select id="adm-jsel"></select>
+        <div id="adm-jestado" class="live"></div>
+      </div>
+      <div class="card">
+        <h2>Inscritos <span id="adm-nins" class="chip blue"></span></h2>
+        <div id="adm-inscritos" class="live"></div>
+        <h3>Apuntar a alguien</h3>
+        <select id="ai-jug"></select>
+        <label>Pareja fija (opcional)</label>
+        <select id="ai-par"></select>
+        <button class="btn sec" data-act="adminInscribir">➕ Apuntar</button>
+      </div>
+      <div class="card">
+        <h2>Primer partido · pistas</h2>
+        <div id="adm-pistas" class="live"></div>
+      </div>
+    </div>
+
+    <!-- Resultados -->
+    <div class="adm hidden" id="adm-resultados">
+      <div class="card">
+        <h2>Resultados de la americana</h2>
+        <select id="adm-rsel"></select>
+        <div id="adm-res" class="live"></div>
+      </div>
+      <div class="card">
+        <h2>Poner resultado a otro jugador</h2>
+        <p class="muted small">Para quien no se apuntó o no usa la app.</p>
+        <select id="ar-jug"></select>
+        <div class="row" style="margin-top:6px">
+          <button class="btn mint sm" data-act="adminResultadoLibre" data-r="ganado">Ganó (+8)</button>
+          <button class="btn sec sm" data-act="adminResultadoLibre" data-r="perdido">Perdió (+6)</button>
+          <button class="btn peach sm" data-act="adminResultadoLibre" data-r="asistencia">Solo asistió (+5)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Jugadores -->
+    <div class="adm hidden" id="adm-jugadores">
+      <div class="card">
+        <h2>Solicitudes de alta</h2>
+        <div id="adm-sol" class="live"></div>
+      </div>
+      <div class="card">
+        <h2>Añadir jugador</h2>
+        <label>Nombre</label><input id="nj-nombre" placeholder="Nombre y apellido">
+        <div class="row">
+          <div><label>Teléfono (opcional)</label><input id="nj-tel" type="tel" inputmode="numeric"></div>
+          <div><label>Nivel</label><input id="nj-nivel" type="number" step="0.1" min="1" max="7" value="2.0"></div>
+        </div>
+        <button class="btn" data-act="adminNuevoJugador">Añadir jugador</button>
+        <div id="adm-import"></div>
+      </div>
+      <div class="card">
+        <h2>Jugadores <span id="adm-njug" class="chip blue"></span></h2>
+        <input id="adm-buscar" placeholder="🔍 Buscar…" style="margin-bottom:6px">
+        <div id="adm-jugs" class="live"></div>
+      </div>
+    </div>
+
+    <!-- Temporadas -->
+    <div class="adm hidden" id="adm-temporadas">
+      <div class="card">
+        <h2>Nueva temporada (ranking de 2 meses)</h2>
+        <label>Nombre</label><input id="nt-nombre" placeholder="Ej: Septiembre–Octubre 2026">
+        <div class="row">
+          <div><label>Inicio</label><input type="date" id="nt-ini"></div>
+          <div><label>Fin</label><input type="date" id="nt-fin"></div>
+        </div>
+        <button class="btn" data-act="crearTemporada">Crear temporada</button>
+      </div>
+      <div class="card">
+        <h2>Temporadas</h2>
+        <div id="adm-temps" class="live"></div>
+      </div>
+      <div class="card">
+        <button class="btn rose" data-act="logout">Cerrar sesión de administradora</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<nav class="bottom">
+  <button data-act="nav" data-v="inicio" class="on"><span class="i">🏠</span>Inicio</button>
+  <button data-act="nav" data-v="ranking"><span class="i">🏆</span>Ranking</button>
+  <button data-act="nav" data-v="americana"><span class="i">🎾</span>Americana</button>
+  <button data-act="nav" data-v="perfil"><span class="i">👤</span>Perfil</button>
+  <button data-act="nav" data-v="admin" id="nav-admin" class="hidden"><span class="i">⚙️</span>Admin</button>
+</nav>
+<div id="toast"></div>
+
+<!-- ================= LÓGICA PURA (sin Firebase) ================= -->
+<script id="logic">
+const PTS = { ganado: 8, perdido: 6, asistencia: 5 };   // 5 asistir + 3 ganado / +1 perdido
+const MAX_PTS_JORNADA = 8;
+
+function tsMs(t){
+  if (t == null) return Date.now();               // serverTimestamp todavía pendiente
+  if (typeof t === 'number') return t;
+  if (typeof t.toMillis === 'function') return t.toMillis();
+  if (t.seconds != null) return t.seconds * 1000 + Math.floor((t.nanoseconds || 0) / 1e6);
+  return Date.now();
+}
+function jornadaKey(j){ return (j.fecha || '') + ' ' + (j.hora || ''); }
+
+/* Ranking de una temporada. Desempate: quien envió antes su resultado en la última
+   americana que jugaron ambos. */
+function calcRanking(resultados, jornadas, tid){
+  const jk = {}; jornadas.forEach(j => jk[j.id] = jornadaKey(j));
+  const st = {};
+  resultados.forEach(r => {
+    if (r.temporadaId !== tid || r.estado !== 'aprobado') return;
+    const s = st[r.playerId] || (st[r.playerId] = { pid: r.playerId, pts: 0, asist: 0, gan: 0, per: 0, porJ: {} });
+    s.pts += PTS[r.resultado] || 0;
+    s.asist++;
+    if (r.resultado === 'ganado') s.gan++;
+    if (r.resultado === 'perdido') s.per++;
+    s.porJ[r.jornadaId] = tsMs(r.ts);
+  });
+  const cmpDesempate = (a, b) => {
+    const comunes = Object.keys(a.porJ).filter(j => j in b.porJ)
+      .sort((x, y) => (jk[y] || '').localeCompare(jk[x] || ''));
+    if (comunes.length){ const d = a.porJ[comunes[0]] - b.porJ[comunes[0]]; if (d) return d; }
+    return b.asist - a.asist;
+  };
+  const porPuntos = Object.values(st).sort((a, b) => (b.pts - a.pts) || cmpDesempate(a, b));
+  porPuntos.forEach((s, i) => {
+    s.pos = i + 1;
+    const prev = porPuntos[i - 1];
+    s.empateGanado = !!(porPuntos[i + 1] && porPuntos[i + 1].pts === s.pts);
+    s.distAnterior = prev ? prev.pts - s.pts : null;
+  });
+  const porAsistencia = [...porPuntos].sort((a, b) => (b.asist - a.asist) || (a.pos - b.pos));
+  return { porPuntos, porAsistencia };
+}
+
+/* Propuesta de primer partido: pistas por nivel (pista 1 = más nivel),
+   respetando parejas fijas. En cada pista con 4 sueltos: 1º+4º vs 2º+3º. */
+function generarPropuesta(inscritos, nivelDe){
+  const ids = new Set(inscritos.map(i => i.id));
+  const usados = new Set(), pares = [];
+  inscritos.forEach(i => {
+    const p = i.parejaId;
+    if (usados.has(i.id) || !p || p === i.id || !ids.has(p) || usados.has(p)) return;
+    usados.add(i.id); usados.add(p);
+    pares.push({ pair: [i.id, p], lvl: (nivelDe(i.id) + nivelDe(p)) / 2 });
+  });
+  pares.sort((a, b) => b.lvl - a.lvl);
+  const sueltos = inscritos.filter(i => !usados.has(i.id))
+    .map(i => ({ id: i.id, lvl: nivelDe(i.id) })).sort((a, b) => b.lvl - a.lvl);
+  const nPistas = Math.floor(inscritos.length / 4);
+  let pi = 0, si = 0;
+  const pistas = [], reservas = [];
+  for (let c = 0; c < nPistas; c++){
+    const units = []; let filled = 0;
+    while (filled < 4){
+      const np = pares[pi], ns = sueltos[si];
+      const puedePar = np && filled <= 2;
+      if (puedePar && (!ns || np.lvl >= ns.lvl)){ units.push({ pair: np.pair }); pi++; filled += 2; }
+      else if (ns){ units.push({ s: ns }); si++; filled++; }
+      else break;
+    }
+    if (filled < 4){ units.forEach(u => u.pair ? reservas.push(...u.pair) : reservas.push(u.s.id)); break; }
+    const fijas = units.filter(u => u.pair).map(u => u.pair);
+    const s = units.filter(u => u.s).map(u => u.s).sort((a, b) => b.lvl - a.lvl).map(x => x.id);
+    let A, B;
+    if (fijas.length === 2){ A = fijas[0]; B = fijas[1]; }
+    else if (fijas.length === 1){ A = fijas[0]; B = [s[0], s[1]]; }
+    else { A = [s[0], s[3]]; B = [s[1], s[2]]; }
+    pistas.push({ a1: A[0], a2: A[1], b1: B[0], b2: B[1] });
+  }
+  for (; pi < pares.length; pi++) reservas.push(...pares[pi].pair);
+  for (; si < sueltos.length; si++) reservas.push(sueltos[si].id);
+  return { pistas, reservas };
+}
+
+/* Quién está a tiro (≤ 8 puntos) en la última americana */
+function aTiro(porPuntos, pid){
+  const i = porPuntos.findIndex(s => s.pid === pid);
+  if (i < 0) return { arriba: [], abajo: [] };
+  const me = porPuntos[i];
+  return {
+    arriba: porPuntos.slice(0, i).filter(s => s.pts - me.pts <= MAX_PTS_JORNADA).map(s => ({ pid: s.pid, dif: s.pts - me.pts })),
+    abajo: porPuntos.slice(i + 1).filter(s => me.pts - s.pts <= MAX_PTS_JORNADA).map(s => ({ pid: s.pid, dif: me.pts - s.pts }))
+  };
+}
+if (typeof module !== 'undefined') module.exports = { PTS, tsMs, calcRanking, generarPropuesta, aTiro };
+</script>
+
+<!-- ================= APP (Firebase) ================= -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, getDoc, serverTimestamp, writeBatch }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ---------- CONFIGURACIÓN ---------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyAWCyKya6OP3w2OfXmQtWZlBvXIqLZ7s04",
+  authDomain: "matinales-de-padel.firebaseapp.com",
+  projectId: "matinales-de-padel",
+  storageBucket: "matinales-de-padel.firebasestorage.app",
+  messagingSenderId: "227155783201",
+  appId: "1:227155783201:web:3794c516d8ec15a7a9bd60"
+};
+const ADMIN_EMAIL = "marialuzq@gmail.com";            // ← debe coincidir con las reglas
+const EMAIL_DOMINIO = "jugador.matinales-padel.app";  // email interno de cada jugador
+const pinPass = pin => `mp-${pin}-padel`;             // Firebase exige 6+ caracteres
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+/* ---------- ESTADO ---------- */
+const S = {
+  user: null, isAdmin: false,
+  players: {}, priv: {}, solicitudes: [], miSolicitud: undefined,
+  temporadas: [], jornadas: [], resultados: [], inscritos: {},
+  view: 'inicio', admTab: 'jornada', rankMode: 'puntos', rankTemp: null,
+  admJ: null, draft: null, sel: null, loaded: { players: false, jornadas: false, resultados: false }
+};
+const insUnsub = {};
+let adminUnsubs = [], solUnsub = null;
+
+/* ---------- UTILIDADES ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const nom = pid => S.players[pid]?.nombre || '—';
+const nivel = pid => { const n = parseFloat(S.priv[pid]?.nivel); return isNaN(n) ? 2 : n; };
+const soloDig = s => String(s || '').replace(/\D/g, '').replace(/^34(?=\d{9}$)/, '');
+function toast(msg, ms = 2600){ const t = $('toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', ms); }
+function fmtFecha(j, largo = true){
+  if (!j?.fecha) return '';
+  const d = new Date(j.fecha + 'T' + (j.hora || '00:00'));
+  const f = d.toLocaleDateString('es-ES', largo ? { weekday: 'long', day: 'numeric', month: 'long' } : { day: 'numeric', month: 'short' });
+  return f.charAt(0).toUpperCase() + f.slice(1) + (largo && j.hora ? ' · ' + j.hora + ' h' : '');
+}
+const fmtHora = t => new Date(tsMs(t)).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const ESTADOS = { abierta: ['Inscripciones abiertas', 'mint'], en_juego: ['En juego', 'peach'], cerrada: ['Cerrada', ''] };
+const estadoChip = e => `<span class="chip ${ESTADOS[e]?.[1] || ''}">${ESTADOS[e]?.[0] || e}</span>`;
+const RES_TXT = { ganado: '🏆 Ganó', perdido: '🤝 Perdió', asistencia: '📅 Solo asistencia' };
+function errMsg(e){
+  const c = e?.code || '';
+  if (c.includes('permission-denied')) return 'No tienes permiso para hacer eso.';
+  if (c.includes('email-already-in-use')) return 'Ese teléfono ya está registrado. Entra con tu PIN.';
+  if (c.includes('invalid-credential') || c.includes('wrong-password') || c.includes('user-not-found')) return 'Teléfono o PIN incorrectos.';
+  if (c.includes('too-many-requests')) return 'Demasiados intentos. Espera unos minutos.';
+  if (c.includes('unavailable') || c.includes('network')) return 'Sin conexión. Inténtalo de nuevo.';
+  return 'Error: ' + (e?.message || c);
+}
+function fillSelect(sel, opts, placeholder){
+  const cur = sel.value;
+  sel.innerHTML = (placeholder ? `<option value="">${esc(placeholder)}</option>` : '') +
+    opts.map(o => `<option value="${esc(o.v)}">${esc(o.t)}</option>`).join('');
+  if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
+}
+
+/* ---------- DERIVADOS ---------- */
+const jornadasOrd = () => [...S.jornadas].sort((a, b) => jornadaKey(a).localeCompare(jornadaKey(b)));
+function jornadaActual(){
+  const js = jornadasOrd();
+  return js.find(j => j.estado !== 'cerrada') || js[js.length - 1] || null;
+}
+const tempActiva = () => S.temporadas.find(t => t.estado === 'activa') || null;
+const tempsOrd = () => [...S.temporadas].sort((a, b) => (b.inicio || '').localeCompare(a.inicio || ''));
+const me = () => S.user && !S.isAdmin ? Object.values(S.players).find(p => p.uid === S.user.uid) || null : null;
+const jugadoresActivos = () => Object.values(S.players).filter(p => p.estado !== 'baja').sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+const resJ = jid => S.resultados.filter(r => r.jornadaId === jid).sort((a, b) => tsMs(a.ts) - tsMs(b.ts));
+const ultimaActiva = () => { const t = tempActiva(); return t && S.jornadas.find(j => j.temporadaId === t.id && j.ultima && j.estado !== 'cerrada'); };
+
+/* ---------- FIREBASE: ESCUCHAS ---------- */
+const onErr = e => { console.error(e); toast(errMsg(e), 4000); };
+onSnapshot(collection(db, 'players'), s => { S.players = {}; s.forEach(d => S.players[d.id] = { id: d.id, ...d.data() }); S.loaded.players = true; render(); }, onErr);
+onSnapshot(collection(db, 'temporadas'), s => { S.temporadas = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); }, onErr);
+onSnapshot(collection(db, 'resultados'), s => { S.resultados = s.docs.map(d => ({ id: d.id, ...d.data() })); S.loaded.resultados = true; render(); }, onErr);
+onSnapshot(collection(db, 'jornadas'), s => {
+  S.jornadas = s.docs.map(d => ({ id: d.id, ...d.data() }));
+  S.loaded.jornadas = true;
+  S.jornadas.filter(j => j.estado !== 'cerrada').forEach(j => subInscritos(j.id));
+  if (S.admJ && !S.jornadas.some(j => j.id === S.admJ)) S.admJ = null;
+  render();
+}, onErr);
+
+function subInscritos(jid){
+  if (!jid || insUnsub[jid]) return;
+  insUnsub[jid] = onSnapshot(collection(db, 'jornadas', jid, 'inscritos'), s => {
+    S.inscritos[jid] = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => tsMs(a.ts) - tsMs(b.ts));
+    render();
+  }, onErr);
+}
+
+onAuthStateChanged(auth, u => {
+  S.user = u;
+  S.isAdmin = !!u && (u.email || '').toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  adminUnsubs.forEach(f => f()); adminUnsubs = [];
+  if (solUnsub){ solUnsub(); solUnsub = null; }
+  S.priv = {}; S.solicitudes = []; S.miSolicitud = undefined;
+  if (S.isAdmin){
+    adminUnsubs.push(onSnapshot(collection(db, 'privado'), s => { S.priv = {}; s.forEach(d => S.priv[d.id] = d.data()); render(); }, onErr));
+    adminUnsubs.push(onSnapshot(collection(db, 'solicitudes'), s => { S.solicitudes = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); }, onErr));
+  } else if (u){
+    solUnsub = onSnapshot(doc(db, 'solicitudes', u.uid), d => { S.miSolicitud = d.exists() ? d.data() : null; render(); }, () => {});
+  }
+  if (!S.isAdmin && S.view === 'admin') S.view = 'inicio';
+  render();
+});
+
+/* ---------- RENDER ---------- */
+let pendingRender = false;
+const editing = () => { const a = document.activeElement; return a && /INPUT|SELECT|TEXTAREA/.test(a.tagName) && a.closest('.live'); };
+function render(){ if (editing()){ pendingRender = true; return; } pendingRender = false; doRender(); }
+document.addEventListener('focusout', () => { if (pendingRender) setTimeout(() => { if (!editing() && pendingRender) render(); }, 350); });
+
+function doRender(){
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'v-' + S.view));
+  document.querySelectorAll('nav.bottom button').forEach(b => b.classList.toggle('on', b.dataset.v === S.view));
+  $('nav-admin').classList.toggle('hidden', !S.isAdmin);
+  const m = me();
+  $('hdr-sub').textContent = S.isAdmin ? '⚙️ Administradora' : m ? '👋 Hola, ' + m.nombre.split(' ')[0] : 'Americanas · Ranking en vivo';
+  renderInicio(); renderRanking(); renderAmericana(); renderPerfil();
+  if (S.isAdmin) renderAdmin();
+}
+
+/* ----- Inicio ----- */
+function renderInicio(){
+  const j = jornadaActual(), m = me(), t = tempActiva();
+  const ult = ultimaActiva();
+  const rk = t ? calcRanking(S.resultados, S.jornadas, t.id) : null;
+
+  // Banner última americana
+  let b = '';
+  if (ult){
+    b = `<div class="banner"><b>🏁 ¡Última americana del ranking!</b>${esc(fmtFecha(ult))}. Los puntos de ese día cierran la temporada <i>${esc(t.nombre)}</i>.`;
+    if (m && rk){
+      const at = aTiro(rk.porPuntos, m.id);
+      if (at.arriba.length) b += `<div style="margin-top:8px">🔥 Puedes alcanzar a: ${at.arriba.map(x => `<b style="display:inline">${esc(nom(x.pid))}</b> (${x.dif ? 'a ' + x.dif + ' pts' : 'empatados'})`).join(', ')}</div>`;
+      if (at.abajo.length) b += `<div style="margin-top:6px">👀 Te pueden pasar: ${at.abajo.slice(0, 4).map(x => `${esc(nom(x.pid))} (a ${x.dif})`).join(', ')}</div>`;
+    } else if (rk){
+      const duelos = [];
+      rk.porPuntos.slice(0, 6).forEach((s, i, a) => { if (i && s.distAnterior <= MAX_PTS_JORNADA) duelos.push(`${esc(nom(a[i - 1].pid))} vs ${esc(nom(s.pid))} (${s.distAnterior} pts)`); });
+      if (duelos.length) b += `<div style="margin-top:8px">🔥 Duelos ajustados: ${duelos.join(' · ')}</div>`;
+    }
+    b += `</div>`;
+  }
+  $('ini-banner').innerHTML = b;
+
+  // Jornada
+  let h = '';
+  if (!S.loaded.jornadas) h = `<div class="card empty">Cargando…</div>`;
+  else if (!j) h = `<div class="card"><h2>Próxima americana</h2><p class="empty">Todavía no hay americanas creadas.</p></div>`;
+  else {
+    const ins = S.inscritos[j.id] || [];
+    const miIns = m && ins.find(i => i.id === m.id);
+    h = `<div class="card"><h2>${j.estado === 'cerrada' ? 'Última americana' : 'Próxima americana'}</h2>
+      <div style="font-weight:700;font-size:1.05rem">${esc(fmtFecha(j))}</div>
+      <div style="margin:6px 0">${estadoChip(j.estado)} ${j.ultima ? '<span class="chip peach">🏁 Última del ranking</span>' : ''} <span class="chip blue">${ins.length} apuntados</span></div>`;
+    if (m && j.estado === 'abierta'){
+      if (miIns) h += `<div class="alert">✅ Estás apuntado/a${miIns.parejaId ? ' con ' + esc(nom(miIns.parejaId)) : ''}.</div>
+          <button class="btn rose" data-act="desapuntarme" data-j="${j.id}">Desapuntarme</button>`;
+      else h += `<label>¿Vienes con pareja fija? (opcional)</label>
+          <select id="ins-pareja"><option value="">Sin pareja fija</option>${jugadoresActivos().filter(p => p.id !== m.id).map(p => `<option value="${p.id}">${esc(p.nombre)}</option>`).join('')}</select>
+          <button class="btn mint" data-act="apuntarme" data-j="${j.id}">✋ Me apunto</button>`;
+    } else if (!S.user) h += `<p class="muted" style="margin-top:6px">Entra en <b>Perfil</b> para apuntarte y subir tu resultado.</p>`;
+    // Mi pista
+    if (m && j.pistas){
+      const k = j.pistas.findIndex(p => [p.a1, p.a2, p.b1, p.b2].includes(m.id));
+      if (k >= 0){ const p = j.pistas[k]; const comp = p.a1 === m.id ? p.a2 : p.a2 === m.id ? p.a1 : p.b1 === m.id ? p.b2 : p.b1;
+        const riv = [p.a1, p.a2].includes(m.id) ? [p.b1, p.b2] : [p.a1, p.a2];
+        h += `<div class="alert">🎾 Empiezas en la <b>pista ${k + 1}</b> con ${esc(nom(comp))} contra ${esc(nom(riv[0]))} y ${esc(nom(riv[1]))}.</div>`; }
+    }
+    h += `</div>`;
+  }
+  $('ini-jornada').innerHTML = h;
+
+  // Resultado
+  let r = '';
+  if (m && j && j.estado !== 'cerrada'){
+    const mio = S.resultados.find(x => x.jornadaId === j.id && x.playerId === m.id);
+    r = `<div class="card"><h2>Resultado del último partido</h2>`;
+    if (mio){
+      const orden = resJ(j.id).findIndex(x => x.id === mio.id) + 1;
+      r += `<div class="center" style="font-size:1.1rem;font-weight:700">${RES_TXT[mio.resultado]}</div>
+        <p class="center muted" style="margin-top:6px">Enviado a las ${fmtHora(mio.ts)} · ${orden}º en enviarlo<br>
+        ${mio.estado === 'aprobado' ? `<span class="chip mint">✓ Validado · +${PTS[mio.resultado]} pts</span>` : '<span class="chip lav">⏳ Pendiente de validar</span>'}</p>`;
+    } else if (j.estado === 'en_juego'){
+      r += `<p class="muted center">Solo cuenta el <b>último partido</b>. ¡Quien lo envía antes gana los empates!</p>
+        <button class="btn mint big" data-act="enviarRes" data-r="ganado" data-j="${j.id}">🏆 HE GANADO</button>
+        <button class="btn sec big" data-act="enviarRes" data-r="perdido" data-j="${j.id}">🤝 He perdido</button>`;
+    } else r += `<p class="muted center">Podrás enviarlo cuando empiece la americana.</p>`;
+    r += `</div>`;
+  }
+  $('ini-resultado').innerHTML = r;
+
+  // Top 5
+  let tp = '';
+  if (t && rk){
+    tp = `<div class="card"><h2>🏆 Top 5 · ${esc(t.nombre)}</h2>${rk.porPuntos.length ? rk.porPuntos.slice(0, 5).map(s => rankRow(s, 'puntos', m)).join('') : '<p class="empty">Aún no hay resultados validados.</p>'}
+      <button class="btn sec" data-act="nav" data-v="ranking">Ver ranking completo</button></div>`;
+  }
+  $('ini-top').innerHTML = tp;
+}
+
+function rankRow(s, modo, m){
+  const pos = modo === 'puntos' ? s.pos : s._posA;
+  const cls = (pos <= 3 ? ' p' + pos : '') + (m && m.id === s.pid ? ' me' : '');
+  let sub = `${s.asist} asist. · ${s.gan}G ${s.per}P`;
+  if (modo === 'puntos' && s.empateGanado) sub += ' · <span class="chip lav">desempate: envió antes</span>';
+  if (modo === 'puntos' && ultimaActiva() && s.distAnterior != null && s.distAnterior <= MAX_PTS_JORNADA) sub += ` · <span class="chip peach">a ${s.distAnterior} del anterior</span>`;
+  return `<div class="rank-row${cls}"><div class="pos">${pos <= 3 ? ['🥇', '🥈', '🥉'][pos - 1] : pos}</div>
+    <div class="who"><div class="n">${esc(nom(s.pid))}</div><div class="muted small">${sub}</div></div>
+    <div class="pts">${modo === 'puntos' ? s.pts : s.asist}</div></div>`;
+}
+
+/* ----- Ranking ----- */
+function renderRanking(){
+  const ts = tempsOrd();
+  if (!S.rankTemp || !ts.some(t => t.id === S.rankTemp)) S.rankTemp = (tempActiva() || ts[0] || {}).id || null;
+  fillSelect($('rank-temp'), ts.map(t => ({ v: t.id, t: t.nombre + (t.estado === 'activa' ? ' (en curso)' : ' (cerrada)') })));
+  $('rank-temp').value = S.rankTemp || '';
+  $('seg-puntos').classList.toggle('on', S.rankMode === 'puntos');
+  $('seg-asistencia').classList.toggle('on', S.rankMode === 'asistencia');
+  if (!S.rankTemp){ $('rank-list').innerHTML = '<p class="empty">Todavía no hay ninguna temporada.</p>'; $('rank-info').textContent = ''; return; }
+  const rk = calcRanking(S.resultados, S.jornadas, S.rankTemp);
+  rk.porAsistencia.forEach((s, i) => s._posA = i + 1);
+  const lista = S.rankMode === 'puntos' ? rk.porPuntos : rk.porAsistencia;
+  const pend = S.resultados.filter(r => r.temporadaId === S.rankTemp && r.estado === 'pendiente').length;
+  const t = S.temporadas.find(x => x.id === S.rankTemp);
+  $('rank-info').innerHTML = (S.rankMode === 'puntos'
+    ? 'Asistir +5 · Último partido ganado +3 / perdido +1. Empate: gana quien envió antes su resultado.'
+    : 'Premio a quien más americanas ha jugado en la temporada.') +
+    (pend ? ` <span class="chip lav">${pend} resultado(s) pendientes de validar</span>` : '') +
+    (t?.estado === 'cerrada' && t.ganadorPuntos ? `<br>🏆 Campeón/a: <b>${esc(t.ganadorPuntos)}</b> · 📅 Más asistencias: <b>${esc(t.ganadorAsistencia || '—')}</b>` : '');
+  $('rank-list').innerHTML = lista.length ? lista.map(s => rankRow(s, S.rankMode, me())).join('') : '<p class="empty">Aún no hay resultados validados.</p>';
+}
+
+/* ----- Americana ----- */
+function renderAmericana(){
+  const j = jornadaActual(), m = me();
+  if (!j){ $('ame-content').innerHTML = '<div class="card empty">No hay americanas todavía.</div>'; return; }
+  const ins = S.inscritos[j.id] || [];
+  let h = `<div class="card"><h2>${esc(fmtFecha(j))}</h2>${estadoChip(j.estado)} ${j.ultima ? '<span class="chip peach">🏁 Última del ranking</span>' : ''}</div>`;
+  if (j.pistas?.length){
+    h += `<div class="card"><h2>Primer partido</h2>${j.pistas.map((p, k) => courtHTML(p, k, false, m)).join('')}
+      ${j.reservas?.length ? `<p class="muted small">Reservas: ${j.reservas.map(nom).map(esc).join(', ')}</p>` : ''}</div>`;
+  }
+  const rs = resJ(j.id);
+  if (rs.length){
+    h += `<div class="card"><h2>Resultados enviados</h2>${rs.map((r, i) => `<div class="list-item"><div class="row" style="flex:1;justify-content:flex-start;gap:10px"><span class="num">${i + 1}</span><div><div class="name">${esc(nom(r.playerId))}</div><div class="muted small">${fmtHora(r.ts)}</div></div></div>
+      <div>${RES_TXT[r.resultado]} ${r.estado === 'aprobado' ? '<span class="chip mint">✓</span>' : '<span class="chip lav">⏳</span>'}</div></div>`).join('')}</div>`;
+  }
+  h += `<div class="card"><h2>Apuntados (${ins.length})</h2>${ins.length ? ins.map((i, k) => `<div class="list-item"><div class="row" style="justify-content:flex-start;gap:10px"><span class="num">${k + 1}</span><span class="name">${esc(nom(i.id))}</span></div>${i.parejaId ? `<span class="chip blue">con ${esc(nom(i.parejaId))}</span>` : ''}</div>`).join('') : '<p class="empty">Nadie apuntado todavía.</p>'}</div>`;
+  $('ame-content').innerHTML = h;
+}
+
+function courtHTML(p, k, editable, m){
+  const slot = (key) => {
+    const pid = p[key]; const path = `c${k}.${key}`;
+    const lv = editable ? `<span class="lvl">${nivel(pid).toFixed(1)}</span>` : '';
+    const cls = 'slot' + (S.sel === path ? ' sel' : '') + (m && m.id === pid ? ' mine' : '');
+    return editable ? `<button class="${cls}" data-act="slot" data-p="${path}">${esc(nom(pid))}${lv}</button>` : `<div class="${cls}">${esc(nom(pid))}</div>`;
+  };
+  const media = (a, b) => ((nivel(p[a]) + nivel(p[b])) / 2).toFixed(2);
+  return `<div class="court"><div class="t"><span>Pista ${k + 1}</span>${editable ? `<span class="muted small">${media('a1', 'a2')} vs ${media('b1', 'b2')}</span>` : ''}</div>
+    <div class="teams"><div>${slot('a1')}${slot('a2')}</div><div class="vs">VS</div><div>${slot('b1')}${slot('b2')}</div></div></div>`;
+}
+
+/* ----- Perfil ----- */
+function renderPerfil(){
+  const m = me(), u = S.user;
+  $('perfil-forms').classList.toggle('hidden', !!u);
+  let h = '';
+  if (S.isAdmin){
+    h = `<div class="card"><h2>Sesión de administradora</h2><p class="muted">${esc(u.email)}</p><button class="btn sec" data-act="nav" data-v="admin">Ir a Admin</button><button class="btn rose" data-act="logout">Cerrar sesión</button></div>`;
+  } else if (u && !m){
+    if (!S.loaded.players || S.miSolicitud === undefined) h = `<div class="card empty">Cargando…</div>`;
+    else if (S.miSolicitud) h = `<div class="card center"><h2>⏳ Alta pendiente</h2><p>Hola ${esc(S.miSolicitud.nombre)}, Luz tiene que aprobar tu alta. En cuanto lo haga podrás apuntarte y subir resultados.</p><button class="btn sec" data-act="logout">Salir</button></div>`;
+    else h = `<div class="card center"><h2>Cuenta no activa</h2><p class="muted">Tu alta no está activa. Habla con Luz.</p><button class="btn sec" data-act="logout">Salir</button></div>`;
+  } else if (m){
+    const mis = S.resultados.filter(r => r.playerId === m.id && r.estado === 'aprobado');
+    const gan = mis.filter(r => r.resultado === 'ganado').length, per = mis.filter(r => r.resultado === 'perdido').length;
+    const t = tempActiva(); let pos = '—', ptsT = 0, asT = 0;
+    if (t){ const s = calcRanking(S.resultados, S.jornadas, t.id).porPuntos.find(x => x.pid === m.id); if (s){ pos = s.pos + 'º'; ptsT = s.pts; asT = s.asist; } }
+    const jById = Object.fromEntries(S.jornadas.map(j => [j.id, j]));
+    const hist = S.resultados.filter(r => r.playerId === m.id).sort((a, b) => jornadaKey(jById[b.jornadaId] || {}).localeCompare(jornadaKey(jById[a.jornadaId] || {}))).slice(0, 12);
+    h = `<div class="card"><h2>👤 ${esc(m.nombre)}</h2>
+      ${t ? `<h3>Temporada ${esc(t.nombre)}</h3><div class="stats"><div class="stat"><div class="v">${pos}</div><div class="l">Posición</div></div><div class="stat"><div class="v">${ptsT}</div><div class="l">Puntos</div></div><div class="stat"><div class="v">${asT}</div><div class="l">Asistencias</div></div></div>` : ''}
+      <h3>Histórico total</h3><div class="stats"><div class="stat"><div class="v">${mis.length}</div><div class="l">Americanas</div></div><div class="stat"><div class="v">${gan}/${per}</div><div class="l">Ganados/Perdidos</div></div><div class="stat"><div class="v">${gan + per ? Math.round(gan * 100 / (gan + per)) : 0}%</div><div class="l">Victorias</div></div></div>
+      </div>
+      <div class="card"><h2>Mis americanas</h2>${hist.length ? hist.map(r => `<div class="list-item"><span>${esc(fmtFecha(jById[r.jornadaId], false))}</span><span>${RES_TXT[r.resultado]} ${r.estado === 'aprobado' ? `<span class="chip mint">+${PTS[r.resultado]}</span>` : '<span class="chip lav">⏳</span>'}</span></div>`).join('') : '<p class="empty">Todavía no has jugado ninguna.</p>'}
+      <button class="btn sec" data-act="logout">Cerrar sesión</button></div>`;
+  }
+  $('perfil-live').innerHTML = h;
+}
+
+/* ----- Admin ----- */
+function renderAdmin(){
+  document.querySelectorAll('.adm').forEach(d => d.classList.toggle('hidden', d.id !== 'adm-' + S.admTab));
+  document.querySelectorAll('.subtabs button').forEach(b => b.classList.toggle('on', b.dataset.v === S.admTab));
+  const js = [...jornadasOrd()].reverse();
+  if (!S.admJ || !S.jornadas.some(j => j.id === S.admJ)) S.admJ = jornadaActual()?.id || null;
+  const jOpts = js.map(j => ({ v: j.id, t: fmtFecha(j, false) + ' · ' + (ESTADOS[j.estado]?.[0] || '') + (j.ultima ? ' 🏁' : '') }));
+  ['adm-jsel', 'adm-rsel'].forEach(id => { fillSelect($(id), jOpts); $(id).value = S.admJ || ''; });
+  const pend = S.resultados.filter(r => r.estado === 'pendiente').length;
+  $('adm-badge-res').innerHTML = pend ? `<span class="chip rose">${pend}</span>` : '';
+  $('adm-badge-sol').innerHTML = S.solicitudes.length ? `<span class="chip rose">${S.solicitudes.length}</span>` : '';
+  const j = S.jornadas.find(x => x.id === S.admJ);
+  if (j) subInscritos(j.id);
+  renderAdmJornada(j); renderAdmResultados(j); renderAdmJugadores(); renderAdmTemporadas();
+}
+
+function renderAdmJornada(j){
+  if (!j){
+    $('adm-jestado').innerHTML = `<p class="empty">${tempActiva() ? 'Crea la primera americana arriba.' : 'Primero crea una temporada en la pestaña 🗓️ Temporadas.'}</p>`;
+    $('adm-inscritos').innerHTML = ''; $('adm-pistas').innerHTML = ''; $('adm-nins').textContent = ''; return;
+  }
+  $('adm-jestado').innerHTML = `<div style="margin:10px 0">${estadoChip(j.estado)} ${j.ultima ? '<span class="chip peach">🏁 Última del ranking</span>' : ''}</div>
+    <div class="row">
+      <button class="btn sm ${j.estado === 'abierta' ? '' : 'sec'}" data-act="setEstado" data-e="abierta">Inscripciones</button>
+      <button class="btn sm ${j.estado === 'en_juego' ? '' : 'sec'}" data-act="setEstado" data-e="en_juego">En juego</button>
+      <button class="btn sm ${j.estado === 'cerrada' ? '' : 'sec'}" data-act="setEstado" data-e="cerrada">Cerrada</button>
+    </div>
+    <p class="muted small" style="margin-top:6px">Inscripciones: se pueden apuntar · En juego: pueden enviar el resultado · Cerrada: ya no se puede enviar nada.</p>
+    <div class="row" style="margin-top:8px"><button class="btn sm peach" data-act="toggleUltima">${j.ultima ? 'Quitar 🏁 última' : 'Marcar 🏁 última'}</button><button class="btn sm rose" data-act="borrarJornada">Borrar americana</button></div>`;
+
+  const ins = S.inscritos[j.id] || [];
+  $('adm-nins').textContent = ins.length;
+  $('adm-inscritos').innerHTML = ins.length ? ins.map((i, k) => `<div class="list-item"><div><span class="name">${k + 1}. ${esc(nom(i.id))}</span> <span class="lvl">${nivel(i.id).toFixed(1)}</span>
+      ${i.parejaId ? `<div><span class="chip blue">pareja: ${esc(nom(i.parejaId))}</span>${(ins.some(x => x.id === i.parejaId)) ? '' : ' <span class="chip rose">no apuntada</span>'}</div>` : ''}
+      ${i.por === 'admin' ? '<div class="muted small">apuntado por ti</div>' : ''}</div>
+      <button class="btn sm rose" data-act="quitarIns" data-p="${i.id}">Quitar</button></div>`).join('') : '<p class="empty">Nadie apuntado todavía.</p>';
+  const libres = jugadoresActivos().filter(p => !ins.some(i => i.id === p.id)).map(p => ({ v: p.id, t: `${p.nombre} (${nivel(p.id).toFixed(1)})` }));
+  fillSelect($('ai-jug'), libres, '— Elige jugador —');
+  fillSelect($('ai-par'), jugadoresActivos().map(p => ({ v: p.id, t: p.nombre })), 'Sin pareja fija');
+
+  // Pistas
+  let h = '';
+  const n = ins.length;
+  if (S.draft && S.draft.jid === j.id){
+    h += `<div class="alert">✏️ Toca un jugador y luego otro para intercambiarlos (también con reservas).</div><div style="margin-top:10px">`;
+    h += S.draft.pistas.map((p, k) => courtHTML(p, k, true, null)).join('') + '</div>';
+    if (S.draft.reservas.length) h += `<h3>Reservas / sin pista</h3>` + S.draft.reservas.map((pid, i) => `<button class="slot${S.sel === 'r' + i ? ' sel' : ''}" data-act="slot" data-p="r${i}">${esc(nom(pid))}<span class="lvl">${nivel(pid).toFixed(1)}</span></button>`).join('');
+    h += `<div class="row"><button class="btn mint" data-act="guardarPistas">💾 Guardar pistas</button><button class="btn sec" data-act="descartarDraft">Descartar</button></div>`;
+  } else {
+    if (j.pistas?.length) h += j.pistas.map((p, k) => courtHTML(p, k, false, null)).join('') + (j.reservas?.length ? `<p class="muted small">Reservas: ${j.reservas.map(nom).map(esc).join(', ')}</p>` : '');
+    else h += `<p class="muted">${n} apuntados → ${Math.floor(n / 4)} pista(s)${n % 4 ? `, sobran ${n % 4}` : ''}.</p>`;
+    h += `<button class="btn" data-act="generar" ${n < 4 ? 'disabled' : ''}>🎾 ${j.pistas?.length ? 'Volver a generar propuesta' : 'Generar propuesta por nivel'}</button>`;
+    if (j.pistas?.length) h += `<button class="btn sec" data-act="editarPistas">✏️ Editar pistas a mano</button>`;
+  }
+  $('adm-pistas').innerHTML = h;
+}
+
+function renderAdmResultados(j){
+  if (!j){ $('adm-res').innerHTML = '<p class="empty">No hay americana seleccionada.</p>'; fillSelect($('ar-jug'), [], '—'); return; }
+  const rs = resJ(j.id);
+  const pend = rs.filter(r => r.estado === 'pendiente'), ok = rs.filter(r => r.estado === 'aprobado');
+  const ins = S.inscritos[j.id] || [];
+  const sinRes = ins.filter(i => !rs.some(r => r.playerId === i.id));
+  let h = `<h3>⏳ Pendientes de validar (${pend.length})</h3>`;
+  h += pend.length ? pend.map(r => `<div class="list-item"><div><div class="name">${rs.indexOf(r) + 1}º · ${esc(nom(r.playerId))}</div><div class="muted small">${RES_TXT[r.resultado]} · ${fmtHora(r.ts)}</div></div>
+      <div class="row" style="flex:none"><button class="btn sm mint" data-act="aprobar" data-id="${r.id}">✓</button><button class="btn sm rose" data-act="borrarRes" data-id="${r.id}">✕</button></div></div>`).join('')
+    + `<button class="btn mint" data-act="aprobarTodos">✓ Aprobar todos</button>` : '<p class="empty">Nada pendiente.</p>';
+  h += `<h3>👥 Apuntados sin resultado (${sinRes.length})</h3>`;
+  h += sinRes.length ? sinRes.map(i => `<div class="list-item"><span class="name">${esc(nom(i.id))}</span><div class="row" style="flex:none;gap:4px">
+      <button class="btn sm mint" data-act="adminRes" data-p="${i.id}" data-r="ganado">G</button><button class="btn sm sec" data-act="adminRes" data-p="${i.id}" data-r="perdido">P</button><button class="btn sm peach" data-act="adminRes" data-p="${i.id}" data-r="asistencia">A</button></div></div>`).join('')
+    + '<p class="muted small">G = ganó (+8) · P = perdió (+6) · A = solo asistencia (+5)</p>' : '<p class="empty">Todos tienen resultado.</p>';
+  h += `<h3>✅ Validados (${ok.length})</h3>`;
+  h += ok.length ? ok.map(r => `<div class="list-item"><div><div class="name">${rs.indexOf(r) + 1}º · ${esc(nom(r.playerId))}</div><div class="muted small">${RES_TXT[r.resultado]} · +${PTS[r.resultado]} · ${fmtHora(r.ts)}${r.por === 'admin' ? ' · puesto por ti' : ''}</div></div>
+      <div class="row" style="flex:none"><select data-act-change="cambiarRes" data-id="${r.id}" style="width:auto;padding:6px"><option value="ganado"${r.resultado === 'ganado' ? ' selected' : ''}>Ganó</option><option value="perdido"${r.resultado === 'perdido' ? ' selected' : ''}>Perdió</option><option value="asistencia"${r.resultado === 'asistencia' ? ' selected' : ''}>Asistió</option></select>
+      <button class="btn sm rose" data-act="borrarRes" data-id="${r.id}">✕</button></div></div>`).join('') : '<p class="empty">Ninguno todavía.</p>';
+  $('adm-res').innerHTML = h;
+  fillSelect($('ar-jug'), jugadoresActivos().filter(p => !rs.some(r => r.playerId === p.id)).map(p => ({ v: p.id, t: p.nombre })), '— Elige jugador —');
+}
+
+function renderAdmJugadores(){
+  const sinCuenta = jugadoresActivos().filter(p => !p.uid);
+  $('adm-sol').innerHTML = S.solicitudes.length ? S.solicitudes.map(s => `<div class="list-item" style="flex-wrap:wrap">
+      <div style="flex:1 1 100%"><div class="name">${esc(s.nombre)}</div><div class="muted small">📱 ${esc(s.telefono)}</div></div>
+      <div style="flex:1 1 100%"><label>¿Ya lo tenías en la lista?</label><select id="sol-merge-${s.id}"><option value="">No, es nuevo</option>${sinCuenta.map(p => `<option value="${p.id}">Sí: ${esc(p.nombre)}</option>`).join('')}</select></div>
+      <div class="row" style="flex:1 1 100%"><div><label>Nivel</label><input id="sol-niv-${s.id}" type="number" step="0.1" value="2.0"></div>
+      <button class="btn sm mint" style="margin-top:22px" data-act="aprobarSol" data-id="${s.id}">Aprobar</button><button class="btn sm rose" style="margin-top:22px" data-act="rechazarSol" data-id="${s.id}">Rechazar</button></div></div>`).join('')
+    : '<p class="empty">No hay solicitudes.</p>';
+  const q = ($('adm-buscar').value || '').toLowerCase();
+  const todos = Object.values(S.players).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  $('adm-njug').textContent = jugadoresActivos().length;
+  $('adm-jugs').innerHTML = todos.filter(p => p.nombre.toLowerCase().includes(q)).map(p => `<div class="list-item"${p.estado === 'baja' ? ' style="opacity:.5"' : ''}>
+      <div style="min-width:0"><div class="name">${esc(p.nombre)}</div><div class="muted small">${p.uid ? '📱 usa la app' : 'sin cuenta'}${S.priv[p.id]?.telefono ? ' · ' + esc(S.priv[p.id].telefono) : ''}${p.estado === 'baja' ? ' · de baja' : ''}</div></div>
+      <div class="row" style="flex:none;gap:4px"><input class="inline-lvl" type="number" step="0.1" value="${nivel(p.id).toFixed(1)}" data-act-change="nivel" data-p="${p.id}">
+      <button class="btn sm sec" data-act="toggleBaja" data-p="${p.id}">${p.estado === 'baja' ? 'Alta' : 'Baja'}</button></div></div>`).join('') || '<p class="empty">Sin jugadores.</p>';
+  $('adm-import').innerHTML = S.loaded.players && !Object.keys(S.players).length
+    ? `<button class="btn peach" data-act="importar">📥 Importar mis ${LISTA_INICIAL.length} jugadores de la versión anterior</button>` : '';
+}
+
+function renderAdmTemporadas(){
+  $('adm-temps').innerHTML = tempsOrd().map(t => {
+    const nj = S.jornadas.filter(j => j.temporadaId === t.id).length;
+    const rk = calcRanking(S.resultados, S.jornadas, t.id);
+    const lp = rk.porPuntos[0], la = rk.porAsistencia[0];
+    return `<div class="list-item" style="flex-wrap:wrap"><div style="flex:1"><div class="name">${esc(t.nombre)}</div>
+      <div class="muted small">${esc(t.inicio || '')} → ${esc(t.fin || '')} · ${nj} americanas</div>
+      <div class="small">🏆 ${lp ? esc(nom(lp.pid)) + ' (' + lp.pts + ')' : '—'} · 📅 ${la ? esc(nom(la.pid)) + ' (' + la.asist + ')' : '—'}</div></div>
+      ${t.estado === 'activa' ? `<span class="chip mint">En curso</span><button class="btn rose" data-act="cerrarTemp" data-id="${t.id}">Cerrar temporada y guardar ganadores</button>` : '<span class="chip">Cerrada</span>'}</div>`;
+  }).join('') || '<p class="empty">Crea tu primera temporada.</p>';
+}
+
+/* ---------- ACCIONES ---------- */
+const A = {
+  nav: el => { S.view = el.dataset.v; S.sel = null; doRender(); window.scrollTo(0, 0); },
+  rankMode: el => { S.rankMode = el.dataset.v; doRender(); },
+  admTab: el => { S.admTab = el.dataset.v; doRender(); },
+
+  async login(){
+    const tel = soloDig($('li-tel').value), pin = $('li-pin').value.trim();
+    if (tel.length < 9 || !/^\d{4}$/.test(pin)) return toast('Pon tu teléfono y tu PIN de 4 cifras');
+    try { await signInWithEmailAndPassword(auth, `${tel}@${EMAIL_DOMINIO}`, pinPass(pin)); $('li-pin').value = ''; S.view = 'inicio'; toast('¡Hola!'); }
+    catch (e){ toast(errMsg(e)); }
+  },
+  async registro(){
+    const nombre = $('rg-nombre').value.trim(), tel = soloDig($('rg-tel').value), pin = $('rg-pin').value.trim();
+    if (nombre.length < 3) return toast('Escribe tu nombre y apellido');
+    if (tel.length < 9) return toast('Teléfono no válido');
+    if (!/^\d{4}$/.test(pin)) return toast('El PIN debe tener 4 cifras');
+    if (pin !== $('rg-pin2').value.trim()) return toast('Los PIN no coinciden');
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, `${tel}@${EMAIL_DOMINIO}`, pinPass(pin));
+      await setDoc(doc(db, 'solicitudes', cred.user.uid), { nombre, telefono: tel, ts: serverTimestamp() });
+      ['rg-nombre', 'rg-tel', 'rg-pin', 'rg-pin2'].forEach(id => $(id).value = '');
+      toast('Solicitud enviada. Luz la revisará pronto 🙌', 4000);
+    } catch (e){ toast(errMsg(e)); }
+  },
+  async loginAdmin(){
+    try { await signInWithEmailAndPassword(auth, $('ad-email').value.trim(), $('ad-pass').value); $('ad-pass').value = ''; S.view = 'admin'; }
+    catch (e){ toast(errMsg(e)); }
+  },
+  async logout(){ await signOut(auth); S.view = 'inicio'; S.draft = null; toast('Sesión cerrada'); },
+
+  async apuntarme(el){
+    const m = me(); if (!m) return;
+    const par = $('ins-pareja')?.value || null;
+    try { await setDoc(doc(db, 'jornadas', el.dataset.j, 'inscritos', m.id), { parejaId: par, por: 'jugador', ts: serverTimestamp() }); toast('¡Apuntado/a! 🎾'); }
+    catch (e){ toast(errMsg(e)); }
+  },
+  async desapuntarme(el){
+    const m = me(); if (!m || !confirm('¿Seguro que te desapuntas?')) return;
+    try { await deleteDoc(doc(db, 'jornadas', el.dataset.j, 'inscritos', m.id)); toast('Te has desapuntado'); } catch (e){ toast(errMsg(e)); }
+  },
+  async enviarRes(el){
+    const m = me(); if (!m) return;
+    const r = el.dataset.r, jid = el.dataset.j;
+    if (!confirm(r === 'ganado' ? '¿Confirmas que HAS GANADO el último partido?' : '¿Confirmas que has perdido el último partido?')) return;
+    const j = S.jornadas.find(x => x.id === jid);
+    try {
+      await setDoc(doc(db, 'resultados', `${jid}_${m.id}`), { jornadaId: jid, temporadaId: j.temporadaId, playerId: m.id, resultado: r, estado: 'pendiente', por: 'jugador', ts: serverTimestamp() });
+      toast('¡Resultado enviado! Pendiente de validar ✅');
+    } catch (e){ toast(e?.code?.includes('permission') ? 'Ya habías enviado tu resultado o la americana no está en juego.' : errMsg(e)); }
+  },
+
+  /* --- admin: jornadas --- */
+  async crearJornada(){
+    const t = tempActiva(); if (!t) return toast('Primero crea una temporada');
+    const fecha = $('nj-fecha').value, hora = $('nj-hora').value;
+    if (!fecha) return toast('Elige la fecha');
+    try {
+      const ref = await addDoc(collection(db, 'jornadas'), { fecha, hora, ultima: $('nj-ultima').checked, estado: 'abierta', temporadaId: t.id, creada: serverTimestamp() });
+      S.admJ = ref.id; $('nj-ultima').checked = false; toast('Americana creada. ¡Ya puedes mandar el enlace por WhatsApp!', 3500);
+    } catch (e){ toast(errMsg(e)); }
+  },
+  async setEstado(el){ try { await updateDoc(doc(db, 'jornadas', S.admJ), { estado: el.dataset.e }); } catch (e){ toast(errMsg(e)); } },
+  async toggleUltima(){ const j = S.jornadas.find(x => x.id === S.admJ); try { await updateDoc(doc(db, 'jornadas', S.admJ), { ultima: !j.ultima }); } catch (e){ toast(errMsg(e)); } },
+  async borrarJornada(){
+    const jid = S.admJ; const rs = resJ(jid);
+    if (!confirm(`¿Borrar esta americana${rs.length ? ` y sus ${rs.length} resultados` : ''}? No se puede deshacer.`)) return;
+    try {
+      const b = writeBatch(db);
+      rs.forEach(r => b.delete(doc(db, 'resultados', r.id)));
+      (S.inscritos[jid] || []).forEach(i => b.delete(doc(db, 'jornadas', jid, 'inscritos', i.id)));
+      b.delete(doc(db, 'jornadas', jid));
+      await b.commit(); S.admJ = null; toast('Americana borrada');
+    } catch (e){ toast(errMsg(e)); }
+  },
+  async adminInscribir(){
+    const pid = $('ai-jug').value, par = $('ai-par').value || null;
+    if (!pid) return toast('Elige un jugador');
+    if (par === pid) return toast('La pareja no puede ser la misma persona');
+    try { await setDoc(doc(db, 'jornadas', S.admJ, 'inscritos', pid), { parejaId: par, por: 'admin', ts: serverTimestamp() }); $('ai-jug').value = ''; $('ai-par').value = ''; toast('Apuntado'); }
+    catch (e){ toast(errMsg(e)); }
+  },
+  async quitarIns(el){ if (!confirm('¿Quitar a ' + nom(el.dataset.p) + '?')) return; try { await deleteDoc(doc(db, 'jornadas', S.admJ, 'inscritos', el.dataset.p)); } catch (e){ toast(errMsg(e)); } },
+
+  generar(){
+    const ins = S.inscritos[S.admJ] || [];
+    const prop = generarPropuesta(ins, nivel);
+    S.draft = { jid: S.admJ, ...prop }; S.sel = null; doRender();
+  },
+  editarPistas(){ const j = S.jornadas.find(x => x.id === S.admJ); S.draft = { jid: j.id, pistas: j.pistas.map(p => ({ ...p })), reservas: [...(j.reservas || [])] }; S.sel = null; doRender(); },
+  descartarDraft(){ S.draft = null; S.sel = null; doRender(); },
+  slot(el){
+    const p = el.dataset.p;
+    if (!S.sel){ S.sel = p; return doRender(); }
+    if (S.sel === p){ S.sel = null; return doRender(); }
+    const get = k => k[0] === 'r' ? S.draft.reservas[+k.slice(1)] : S.draft.pistas[+k.slice(1, k.indexOf('.'))][k.split('.')[1]];
+    const set = (k, v) => { if (k[0] === 'r') S.draft.reservas[+k.slice(1)] = v; else S.draft.pistas[+k.slice(1, k.indexOf('.'))][k.split('.')[1]] = v; };
+    const a = get(S.sel), b = get(p); set(S.sel, b); set(p, a); S.sel = null; doRender();
+  },
+  async guardarPistas(){
+    try { await updateDoc(doc(db, 'jornadas', S.draft.jid), { pistas: S.draft.pistas, reservas: S.draft.reservas }); S.draft = null; S.sel = null; toast('Pistas guardadas. Los jugadores ya las ven 🎾'); }
+    catch (e){ toast(errMsg(e)); }
+  },
+
+  /* --- admin: resultados --- */
+  async aprobar(el){ try { await updateDoc(doc(db, 'resultados', el.dataset.id), { estado: 'aprobado' }); } catch (e){ toast(errMsg(e)); } },
+  async aprobarTodos(){
+    const pend = resJ(S.admJ).filter(r => r.estado === 'pendiente');
+    try { const b = writeBatch(db); pend.forEach(r => b.update(doc(db, 'resultados', r.id), { estado: 'aprobado' })); await b.commit(); toast(`${pend.length} resultados validados`); }
+    catch (e){ toast(errMsg(e)); }
+  },
+  async borrarRes(el){ if (!confirm('¿Borrar este resultado? El jugador podrá volver a enviarlo.')) return; try { await deleteDoc(doc(db, 'resultados', el.dataset.id)); } catch (e){ toast(errMsg(e)); } },
+  async adminRes(el){ await ponerResAdmin(el.dataset.p, el.dataset.r); },
+  async adminResultadoLibre(el){ const pid = $('ar-jug').value; if (!pid) return toast('Elige un jugador'); await ponerResAdmin(pid, el.dataset.r); $('ar-jug').value = ''; },
+
+  /* --- admin: jugadores --- */
+  async aprobarSol(el){
+    const s = S.solicitudes.find(x => x.id === el.dataset.id); if (!s) return;
+    const merge = $('sol-merge-' + s.id).value, niv = parseFloat($('sol-niv-' + s.id).value) || 2;
+    try {
+      const b = writeBatch(db);
+      if (merge){
+        b.update(doc(db, 'players', merge), { uid: s.id, estado: 'activo' });
+        b.set(doc(db, 'privado', merge), { telefono: s.telefono, nivel: S.priv[merge]?.nivel ?? niv }, { merge: true });
+      } else {
+        const ref = doc(collection(db, 'players'));
+        b.set(ref, { nombre: s.nombre, uid: s.id, estado: 'activo', creado: serverTimestamp() });
+        b.set(doc(db, 'privado', ref.id), { telefono: s.telefono, nivel: niv });
+      }
+      b.delete(doc(db, 'solicitudes', s.id));
+      await b.commit(); toast(`${s.nombre} ya puede usar la app ✅`);
+    } catch (e){ toast(errMsg(e)); }
+  },
+  async rechazarSol(el){ if (!confirm('¿Rechazar esta solicitud?')) return; try { await deleteDoc(doc(db, 'solicitudes', el.dataset.id)); } catch (e){ toast(errMsg(e)); } },
+  async adminNuevoJugador(){
+    const nombre = $('nj-nombre').value.trim(); if (nombre.length < 2) return toast('Escribe el nombre');
+    try {
+      const b = writeBatch(db); const ref = doc(collection(db, 'players'));
+      b.set(ref, { nombre, uid: null, estado: 'activo', creado: serverTimestamp() });
+      b.set(doc(db, 'privado', ref.id), { telefono: soloDig($('nj-tel').value), nivel: parseFloat($('nj-nivel').value) || 2 });
+      await b.commit(); $('nj-nombre').value = ''; $('nj-tel').value = ''; toast('Jugador añadido');
+    } catch (e){ toast(errMsg(e)); }
+  },
+  async toggleBaja(el){ const p = S.players[el.dataset.p]; try { await updateDoc(doc(db, 'players', p.id), { estado: p.estado === 'baja' ? 'activo' : 'baja' }); } catch (e){ toast(errMsg(e)); } },
+  async importar(){
+    if (!confirm(`¿Importar ${LISTA_INICIAL.length} jugadores con sus niveles?`)) return;
+    try {
+      const b = writeBatch(db);
+      LISTA_INICIAL.forEach(j => { const ref = doc(collection(db, 'players')); b.set(ref, { nombre: j.nombre, uid: null, estado: 'activo', creado: serverTimestamp() }); b.set(doc(db, 'privado', ref.id), { telefono: '', nivel: j.nivel }); });
+      await b.commit(); toast('Jugadores importados ✅');
+    } catch (e){ toast(errMsg(e)); }
+  },
+
+  /* --- admin: temporadas --- */
+  async crearTemporada(){
+    if (tempActiva()) return toast('Cierra antes la temporada en curso');
+    const nombre = $('nt-nombre').value.trim(); if (!nombre) return toast('Ponle nombre a la temporada');
+    try { await addDoc(collection(db, 'temporadas'), { nombre, inicio: $('nt-ini').value, fin: $('nt-fin').value, estado: 'activa' }); $('nt-nombre').value = ''; toast('Temporada creada'); }
+    catch (e){ toast(errMsg(e)); }
+  },
+  async cerrarTemp(el){
+    const t = S.temporadas.find(x => x.id === el.dataset.id);
+    const pend = S.resultados.filter(r => r.temporadaId === t.id && r.estado === 'pendiente').length;
+    if (!confirm(`¿Cerrar "${t.nombre}"?${pend ? `\n⚠️ Hay ${pend} resultados sin validar que NO contarán.` : ''}`)) return;
+    const rk = calcRanking(S.resultados, S.jornadas, t.id);
+    try {
+      await updateDoc(doc(db, 'temporadas', t.id), { estado: 'cerrada', ganadorPuntos: rk.porPuntos[0] ? nom(rk.porPuntos[0].pid) : '', ganadorAsistencia: rk.porAsistencia[0] ? nom(rk.porAsistencia[0].pid) : '' });
+      toast('Temporada cerrada 🏆');
+    } catch (e){ toast(errMsg(e)); }
+  }
+};
+
+async function ponerResAdmin(pid, r){
+  const j = S.jornadas.find(x => x.id === S.admJ); if (!j) return;
+  try { await setDoc(doc(db, 'resultados', `${j.id}_${pid}`), { jornadaId: j.id, temporadaId: j.temporadaId, playerId: pid, resultado: r, estado: 'aprobado', por: 'admin', ts: serverTimestamp() }); toast(`${nom(pid)}: ${RES_TXT[r]}`); }
+  catch (e){ toast(errMsg(e)); }
+}
+
+const CH = {
+  async cambiarRes(el){ try { await updateDoc(doc(db, 'resultados', el.dataset.id), { resultado: el.value }); toast('Resultado cambiado'); } catch (e){ toast(errMsg(e)); } },
+  async nivel(el){ const v = parseFloat(el.value); if (isNaN(v)) return; try { await setDoc(doc(db, 'privado', el.dataset.p), { nivel: v }, { merge: true }); toast('Nivel guardado'); } catch (e){ toast(errMsg(e)); } }
+};
+
+document.addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (el && A[el.dataset.act]){ e.preventDefault(); A[el.dataset.act](el); } });
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.dataset.actChange && CH[el.dataset.actChange]) return CH[el.dataset.actChange](el);
+  if (el.id === 'rank-temp'){ S.rankTemp = el.value; doRender(); }
+  if (el.id === 'adm-jsel' || el.id === 'adm-rsel'){ S.admJ = el.value; S.draft = null; S.sel = null; doRender(); }
+});
+$('adm-buscar').addEventListener('input', () => renderAdmJugadores());
+$('nj-fecha').value = new Date().toISOString().slice(0, 10);
+
+const LISTA_INICIAL = [
+  { nombre: "Adolf Sayol", nivel: 2.5 }, { nombre: "Aída R", nivel: 2.0 }, { nombre: "Alba Ll", nivel: 2.3 },
+  { nombre: "Alba Torrico García", nivel: 2.6 }, { nombre: "Alejandro Caldentey", nivel: 2.8 },
+  { nombre: "Alex P", nivel: 2.2 }, { nombre: "Aroa", nivel: 1.8 }, { nombre: "Camilo Postius Conde", nivel: 2.7 },
+  { nombre: "Ester Pericas", nivel: 2.1 }, { nombre: "Eva F", nivel: 2.4 },
+  { nombre: "Francisco Javier González Rodríg", nivel: 2.9 }, { nombre: "Ginés Segura", nivel: 2.5 },
+  { nombre: "Javi", nivel: 2.6 }, { nombre: "Jordi Herranz", nivel: 2.3 }, { nombre: "Laura", nivel: 2.0 },
+  { nombre: "Lucas Fernández Herrera", nivel: 2.7 }, { nombre: "Manel C", nivel: 2.4 }, { nombre: "Marc G", nivel: 2.8 },
+  { nombre: "Maria Carro", nivel: 2.2 }, { nombre: "María Luz Cervero", nivel: 2.5 },
+  { nombre: "Núria López Roig", nivel: 2.1 }, { nombre: "Pablo G", nivel: 2.9 },
+  { nombre: "Raúl Mula Navarro", nivel: 3.0 }, { nombre: "Rogeli", nivel: 2.4 }, { nombre: "Ruben González López", nivel: 2.6 },
+  { nombre: "Ruth Castillo Tienda", nivel: 1.9 }, { nombre: "Sergio M", nivel: 2.7 }, { nombre: "Sheila Barrionuevo", nivel: 2.3 },
+  { nombre: "Sonia M", nivel: 2.2 }, { nombre: "Yolanda Gómez", nivel: 2.4 }
+];
+
+render();
+</script>
+</body>
+</html>
