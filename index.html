@@ -410,7 +410,7 @@ const S = {
   players: {}, priv: {}, solicitudes: [], miSolicitud: undefined,
   temporadas: [], jornadas: [], resultados: [], inscritos: {},
   view: 'inicio', admTab: 'jornada', rankMode: 'puntos', rankTemp: null,
-  admJ: null, draft: null, sel: null, editPid: null, loaded: { players: false, jornadas: false, resultados: false }
+  admJ: null, draft: null, sel: null, editPid: null, asPid: null, loaded: { players: false, jornadas: false, resultados: false }
 };
 const insUnsub = {};
 let adminUnsubs = [], solUnsub = null;
@@ -466,7 +466,10 @@ function jornadaActual(){
 }
 const tempActiva = () => S.temporadas.find(t => t.estado === 'activa') || null;
 const tempsOrd = () => [...S.temporadas].sort((a, b) => (b.inicio || '').localeCompare(a.inicio || ''));
-const me = () => S.user && !S.isAdmin ? Object.values(S.players).find(p => p.uid === S.user.uid) || null : null;
+const me = () => {
+  if (S.isAdmin) return S.asPid ? S.players[S.asPid] || null : null;   // modo prueba "ver como jugador"
+  return S.user ? Object.values(S.players).find(p => p.uid === S.user.uid) || null : null;
+};
 const jugadoresActivos = () => Object.values(S.players).filter(p => p.estado !== 'baja').sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
 const resJ = jid => S.resultados.filter(r => r.jornadaId === jid).sort((a, b) => tsMs(a.ts) - tsMs(b.ts));
 const ultimaActiva = () => { const t = tempActiva(); return t && S.jornadas.find(j => j.temporadaId === t.id && j.ultima && j.estado !== 'cerrada'); };
@@ -519,7 +522,7 @@ function doRender(){
   document.querySelectorAll('nav.bottom button').forEach(b => b.classList.toggle('on', b.dataset.v === S.view));
   $('nav-admin').classList.toggle('hidden', !S.isAdmin);
   const m = me();
-  $('hdr-sub').textContent = S.isAdmin ? '⚙️ Administradora' : m ? '👋 Hola, ' + m.nombre.split(' ')[0] : 'Americanas · Ranking en vivo';
+  $('hdr-sub').textContent = S.isAdmin && m ? '👁️ Viendo como ' + m.nombre : S.isAdmin ? '⚙️ Administradora' : m ? '👋 Hola, ' + m.nombre.split(' ')[0] : 'Americanas · Ranking en vivo';
   renderInicio(); renderRanking(); renderAmericana(); renderPerfil();
   if (S.isAdmin) renderAdmin();
 }
@@ -554,6 +557,8 @@ function renderInicio(){
     if (nSol || nRes) bell = `<div class="bell">🔔 Tienes ${[nSol ? `<b>${nSol}</b> solicitud${nSol > 1 ? 'es' : ''} de alta` : '', nRes ? `<b>${nRes}</b> resultado${nRes > 1 ? 's' : ''} por validar` : ''].filter(Boolean).join(' y ')}
       <div class="row">${nSol ? '<button class="btn sm" style="background:#fff;color:var(--rose-strong);border:1px solid #f5c6cc" data-act="irAdm" data-v="jugadores">Ver altas</button>' : ''}${nRes ? '<button class="btn sm" style="background:#fff;color:var(--rose-strong);border:1px solid #f5c6cc" data-act="irAdm" data-v="resultados">Ver resultados</button>' : ''}</div></div>`;
   }
+  if (S.isAdmin && m) bell = `<div class="bell" style="background:var(--lav);color:var(--lav-strong);border-color:#d9d0f5">👁️ <b>Modo prueba:</b> estás viendo la app como <b>${esc(m.nombre)}</b>. Lo que hagas (apuntarte, enviar resultado) se guarda de verdad a su nombre.
+      <div class="row"><button class="btn sm" style="background:#fff;color:var(--lav-strong)" data-act="verComo" data-p="">Salir del modo prueba</button></div></div>` + bell;
   $('ini-bell').innerHTML = bell;
 
   // Jornada
@@ -682,12 +687,26 @@ function renderPerfil(){
   $('perfil-forms').classList.toggle('hidden', !!u);
   let h = '';
   if (S.isAdmin){
-    h = `<div class="card"><h2>Sesión de administradora</h2><p class="muted">${esc(u.email)}</p><button class="btn sec" data-act="nav" data-v="admin">Ir a Admin</button><button class="btn rose" data-act="logout">Cerrar sesión</button></div>`;
+    h = `<div class="card"><h2>Sesión de administradora</h2><p class="muted">${esc(u.email)}</p>
+      <h3>👁️ Probar la app como jugador</h3>
+      <p class="muted small">Elige un jugador y verás la app como la vería él: apuntarse, su pista, enviar el resultado, su perfil…</p>
+      <select id="ver-como"><option value="">— Elige jugador —</option>${jugadoresActivos().map(p => `<option value="${p.id}"${p.id === S.asPid ? ' selected' : ''}>${esc(p.nombre)}</option>`).join('')}</select>
+      <div class="row"><button class="btn lav" style="background:var(--lav);color:var(--lav-strong)" data-act="verComoSel">Ver como este jugador</button>${S.asPid ? '<button class="btn sec" data-act="verComo" data-p="">Salir del modo prueba</button>' : ''}</div>
+      <button class="btn sec" data-act="nav" data-v="admin">Ir a Admin</button><button class="btn rose" data-act="logout">Cerrar sesión</button></div>`;
+    const m = me();
+    if (m) h += perfilJugador(m);
   } else if (u && !m){
     if (!S.loaded.players || S.miSolicitud === undefined) h = `<div class="card empty">Cargando…</div>`;
     else if (S.miSolicitud) h = `<div class="card center"><h2>⏳ Alta pendiente</h2><p>Hola ${esc(S.miSolicitud.nombre)}, Luz tiene que aprobar tu alta. En cuanto lo haga podrás apuntarte y subir resultados.</p><button class="btn sec" data-act="logout">Salir</button></div>`;
     else h = `<div class="card center"><h2>Cuenta no activa</h2><p class="muted">Tu alta no está activa. Habla con Luz.</p><button class="btn sec" data-act="logout">Salir</button></div>`;
   } else if (m){
+    h = perfilJugador(m);
+  }
+  $('perfil-live').innerHTML = h;
+}
+
+function perfilJugador(m){
+  let h = '';
     const mis = S.resultados.filter(r => r.playerId === m.id && r.estado === 'aprobado');
     const gan = mis.filter(r => r.resultado === 'ganado').length, per = mis.filter(r => r.resultado === 'perdido').length;
     const t = tempActiva(); let pos = '—', ptsT = 0, asT = 0;
@@ -699,9 +718,8 @@ function renderPerfil(){
       <h3>Histórico total</h3><div class="stats"><div class="stat"><div class="v">${mis.length}</div><div class="l">Americanas</div></div><div class="stat"><div class="v">${gan}/${per}</div><div class="l">Ganados/Perdidos</div></div><div class="stat"><div class="v">${gan + per ? Math.round(gan * 100 / (gan + per)) : 0}%</div><div class="l">Victorias</div></div></div>
       </div>
       <div class="card"><h2>Mis americanas</h2>${hist.length ? hist.map(r => `<div class="list-item"><span>${esc(fmtFecha(jById[r.jornadaId], false))}</span><span>${RES_TXT[r.resultado]} ${r.estado === 'aprobado' ? `<span class="chip mint">+${PTS[r.resultado]}</span>` : '<span class="chip lav">⏳</span>'}</span></div>`).join('') : '<p class="empty">Todavía no has jugado ninguna.</p>'}
-      <button class="btn sec" data-act="logout">Cerrar sesión</button></div>`;
-  }
-  $('perfil-live').innerHTML = h;
+      ${S.isAdmin ? "" : `<button class="btn sec" data-act="logout">Cerrar sesión</button>`}</div>`;
+    return h;
 }
 
 /* ----- Admin ----- */
@@ -809,7 +827,7 @@ function renderAdmJugadores(){
       <div class="row" style="flex:1 1 100%"><div><label>Teléfono</label><input id="ed-tel" type="tel" inputmode="numeric" value="${esc(S.priv[p.id]?.telefono || '')}"></div>
       <div><label>Nivel</label><input id="ed-niv" type="number" step="0.1" value="${nivel(p.id).toFixed(1)}"></div></div>
       <div class="row" style="flex:1 1 100%"><button class="btn mint" data-act="guardarJug" data-p="${p.id}">💾 Guardar</button><button class="btn sec" data-act="editJug" data-p="">Cancelar</button></div>
-      <div class="row" style="flex:1 1 100%"><button class="btn sm sec" style="margin-top:8px" data-act="toggleBaja" data-p="${p.id}">${p.estado === 'baja' ? 'Dar de alta otra vez' : 'Dar de baja'}</button></div></div>`;
+      <div class="row" style="flex:1 1 100%"><button class="btn sm" style="margin-top:8px;background:var(--lav);color:var(--lav-strong)" data-act="verComo" data-p="${p.id}">👁️ Ver app como ${esc(p.nombre.split(' ')[0])}</button><button class="btn sm sec" style="margin-top:8px" data-act="toggleBaja" data-p="${p.id}">${p.estado === 'baja' ? 'Dar de alta otra vez' : 'Dar de baja'}</button></div></div>`;
     return `<div class="list-item"${p.estado === 'baja' ? ' style="opacity:.55"' : ''}>
       <div style="min-width:0"><div class="name">${esc(p.nombre)} <span class="lvl">${nivel(p.id).toFixed(1)}</span></div><div class="muted small">${p.uid ? '✅ usa la app' : 'sin cuenta'} · ${S.priv[p.id]?.telefono ? '📱 ' + esc(S.priv[p.id].telefono) : '<span style="color:var(--peach-strong)">sin teléfono</span>'}${p.estado === 'baja' ? ' · de baja' : ''}</div></div>
       <button class="btn sm sec" data-act="editJug" data-p="${p.id}">✏️ Editar</button></div>`;
@@ -840,6 +858,8 @@ const A = {
   irAdm: el => { S.view = 'admin'; S.admTab = el.dataset.v; doRender(); window.scrollTo(0, 0); },
   fs(){ const n = (fsNivel() % 3) + 1; setFs(n); try { localStorage.setItem('fs', n); } catch (e){} },
   editJug: el => { S.editPid = el.dataset.p || null; doRender(); },
+  verComo: el => { S.asPid = el.dataset.p || null; S.view = S.asPid ? 'inicio' : 'perfil'; doRender(); window.scrollTo(0, 0); if (S.asPid) toast('Viendo la app como ' + nom(S.asPid)); },
+  verComoSel(){ const v = $('ver-como').value; if (!v) return toast('Elige un jugador'); A.verComo({ dataset: { p: v } }); },
   async guardarJug(el){
     const pid = el.dataset.p, nombre = $('ed-nombre').value.trim(), tel = soloDig($('ed-tel').value), niv = parseFloat($('ed-niv').value);
     if (nombre.length < 2) return toast('Escribe el nombre');
@@ -877,7 +897,7 @@ const A = {
     try { await signInWithEmailAndPassword(auth, $('ad-email').value.trim(), $('ad-pass').value); $('ad-pass').value = ''; S.view = 'admin'; }
     catch (e){ toast(errMsg(e)); }
   },
-  async logout(){ await signOut(auth); S.view = 'inicio'; S.draft = null; toast('Sesión cerrada'); },
+  async logout(){ await signOut(auth); S.view = 'inicio'; S.draft = null; S.asPid = null; toast('Sesión cerrada'); },
 
   async apuntarme(el){
     const m = me(); if (!m) return;
