@@ -97,6 +97,20 @@ nav.bottom button.on{color:var(--primary)}
 .alert{background:var(--lav);color:var(--lav-strong);border-radius:10px;padding:10px 12px;font-size:.86rem;margin-top:8px}
 .num{display:inline-flex;align-items:center;justify-content:center;width:1.6rem;height:1.6rem;border-radius:50%;background:var(--primary-soft);color:var(--primary);font-weight:800;font-size:.75rem;flex:none}
 .inline-lvl{width:4.2rem;padding:6px;text-align:center;font-weight:700}
+.alarm{background:#fdd9dd;color:#8e1f2c;border:2px solid #e8959f;border-radius:14px;padding:14px;margin-bottom:14px}
+.alarm h2{color:#8e1f2c;font-size:1.15rem;margin-bottom:8px}
+.alarm .it{background:#fff;border-radius:10px;padding:10px 12px;margin-top:8px}
+.alarm .it .n{font-size:1.1rem;font-weight:800}
+.tardia{display:inline-block;background:#8e1f2c;color:#fff;border-radius:6px;padding:1px 7px;font-size:.8rem;font-weight:800;margin-top:4px}
+.counter{background:var(--silver);border-radius:12px;padding:10px 12px;margin:8px 0;font-weight:600}
+.counter .big{font-size:1.25rem;font-weight:800;color:var(--primary)}
+.slot.hueco{background:var(--rose);border-color:#eaa3ab;color:var(--rose-strong);font-weight:700}
+.circ-chip{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.82rem;font-weight:800;background:var(--primary-soft);color:var(--primary)}
+.circ-chip.og{background:var(--lav);color:var(--lav-strong)}
+.checkrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.checkrow input{flex:none}
+.box{border:2px solid var(--primary);border-radius:12px;padding:12px;margin:10px 0;background:#fff}
+.seg.wrap{flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -112,15 +126,15 @@ nav.bottom button.on{color:var(--primary)}
   <section class="view active live" id="v-inicio">
     <div id="ini-bell"></div>
     <div id="ini-banner"></div>
-    <div id="ini-jornada"></div>
-    <div id="ini-resultado"></div>
+    <div id="ini-jornadas"></div>
     <div id="ini-top"></div>
   </section>
 
   <!-- ============ RANKING ============ -->
   <section class="view live" id="v-ranking">
     <div class="card">
-      <div class="seg">
+      <div class="seg wrap" id="rank-circs"></div>
+      <div class="seg" id="rank-modes">
         <button data-act="rankMode" data-v="puntos" id="seg-puntos" class="on">🏆 Puntos</button>
         <button data-act="rankMode" data-v="asistencia" id="seg-asistencia">📅 Asistencia</button>
       </div>
@@ -132,13 +146,13 @@ nav.bottom button.on{color:var(--primary)}
 
   <!-- ============ AMERICANA ============ -->
   <section class="view live" id="v-americana">
+    <div class="card" id="ame-selcard"><select id="ame-sel"></select></div>
     <div id="ame-content"></div>
   </section>
 
   <!-- ============ PERFIL ============ -->
   <section class="view" id="v-perfil">
     <div id="perfil-live" class="live"></div>
-
     <div id="perfil-forms">
       <div class="card" id="f-login">
         <h2>Entrar</h2>
@@ -169,22 +183,29 @@ nav.bottom button.on{color:var(--primary)}
 
   <!-- ============ ADMIN ============ -->
   <section class="view" id="v-admin">
+    <div id="adm-alarm" class="live"></div>
     <div class="subtabs">
       <button data-act="admTab" data-v="jornada" class="on">🎾 Americana</button>
       <button data-act="admTab" data-v="resultados">✅ Resultados <span id="adm-badge-res"></span></button>
       <button data-act="admTab" data-v="jugadores">👥 Jugadores <span id="adm-badge-sol"></span></button>
-      <button data-act="admTab" data-v="temporadas">🗓️ Temporadas</button>
+      <button data-act="admTab" data-v="circuitos">🏷️ Circuitos</button>
     </div>
 
-    <!-- Jornada -->
+    <!-- Americana -->
     <div class="adm" id="adm-jornada">
       <div class="card">
         <h2>Nueva americana</h2>
+        <label>Circuito</label><select id="nj-circ"></select>
         <div class="row">
           <div><label>Fecha</label><input type="date" id="nj-fecha"></div>
           <div><label>Hora</label><input type="time" id="nj-hora" value="09:30"></div>
         </div>
+        <div class="row">
+          <div><label>Mínimo de pistas</label><input type="number" id="nj-min" min="1" max="20" value="4"></div>
+          <div><label>Máximo de pistas</label><input type="number" id="nj-max" min="1" max="20" value="8"></div>
+        </div>
         <label class="row" style="justify-content:flex-start;gap:10px;margin-top:12px"><input type="checkbox" id="nj-ultima" style="flex:none"> <span>🏁 Última americana del ranking</span></label>
+        <label class="row" style="justify-content:flex-start;gap:10px"><input type="checkbox" id="nj-amistosa" style="flex:none"> <span>🤝 Amistosa (no cuenta para el ranking)</span></label>
         <button class="btn" data-act="crearJornada">Crear americana</button>
       </div>
       <div class="card">
@@ -193,7 +214,7 @@ nav.bottom button.on{color:var(--primary)}
         <div id="adm-jestado" class="live"></div>
       </div>
       <div class="card">
-        <h2>Inscritos <span id="adm-nins" class="chip blue"></span></h2>
+        <h2>Apuntados</h2>
         <div id="adm-inscritos" class="live"></div>
         <h3>Apuntar a alguien</h3>
         <select id="ai-jug"></select>
@@ -210,11 +231,11 @@ nav.bottom button.on{color:var(--primary)}
     <!-- Resultados -->
     <div class="adm hidden" id="adm-resultados">
       <div class="card">
-        <h2>Resultados de la americana</h2>
+        <h2>Resultados / asistencia</h2>
         <select id="adm-rsel"></select>
         <div id="adm-res" class="live"></div>
       </div>
-      <div class="card">
+      <div class="card" id="adm-res-libre">
         <h2>Poner resultado a otro jugador</h2>
         <p class="muted small">Para quien no se apuntó o no usa la app.</p>
         <select id="ar-jug"></select>
@@ -236,34 +257,23 @@ nav.bottom button.on{color:var(--primary)}
         <h2>Añadir jugador</h2>
         <label>Nombre</label><input id="nj-nombre" placeholder="Nombre y apellido">
         <div class="row">
-          <div><label>Teléfono (opcional)</label><input id="nj-tel" type="tel" inputmode="numeric"></div>
+          <div><label>Teléfono</label><input id="nj-tel" type="tel" inputmode="numeric"></div>
           <div><label>Nivel</label><input id="nj-nivel" type="number" step="0.1" min="1" max="7" value="2.0"></div>
         </div>
+        <div id="nj-circs"></div>
         <button class="btn" data-act="adminNuevoJugador">Añadir jugador</button>
         <div id="adm-import"></div>
       </div>
       <div class="card">
         <h2>Jugadores <span id="adm-njug" class="chip blue"></span></h2>
-        <input id="adm-buscar" placeholder="🔍 Buscar…" style="margin-bottom:6px">
+        <input id="adm-buscar" placeholder="🔍 Buscar por nombre o teléfono…" style="margin-bottom:6px">
         <div id="adm-jugs" class="live"></div>
       </div>
     </div>
 
-    <!-- Temporadas -->
-    <div class="adm hidden" id="adm-temporadas">
-      <div class="card">
-        <h2>Nueva temporada (ranking de 2 meses)</h2>
-        <label>Nombre</label><input id="nt-nombre" placeholder="Ej: Septiembre–Octubre 2026">
-        <div class="row">
-          <div><label>Inicio</label><input type="date" id="nt-ini"></div>
-          <div><label>Fin</label><input type="date" id="nt-fin"></div>
-        </div>
-        <button class="btn" data-act="crearTemporada">Crear temporada</button>
-      </div>
-      <div class="card">
-        <h2>Temporadas</h2>
-        <div id="adm-temps" class="live"></div>
-      </div>
+    <!-- Circuitos -->
+    <div class="adm hidden" id="adm-circuitos">
+      <div id="adm-circs" class="live"></div>
       <div class="card">
         <button class="btn rose" data-act="logout">Cerrar sesión de administradora</button>
       </div>
@@ -284,9 +294,10 @@ nav.bottom button.on{color:var(--primary)}
 <script id="logic">
 const PTS = { ganado: 8, perdido: 6, asistencia: 5 };   // 5 asistir + 3 ganado / +1 perdido
 const MAX_PTS_JORNADA = 8;
+const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
 function tsMs(t){
-  if (t == null) return Date.now();               // serverTimestamp todavía pendiente
+  if (t == null) return Date.now();
   if (typeof t === 'number') return t;
   if (typeof t.toMillis === 'function') return t.toMillis();
   if (t.seconds != null) return t.seconds * 1000 + Math.floor((t.nanoseconds || 0) / 1e6);
@@ -294,13 +305,29 @@ function tsMs(t){
 }
 function jornadaKey(j){ return (j.fecha || '') + ' ' + (j.hora || ''); }
 
-/* Ranking de una temporada. Desempate: quien envió antes su resultado en la última
-   americana que jugaron ambos. */
+/* Temporada a la que pertenece una fecha según la duración del circuito */
+function periodo(dur, fecha){
+  const [y, m] = fecha.split('-').map(Number);
+  const pad = n => String(n).padStart(2, '0');
+  const ultimoDia = (yy, mm) => new Date(Date.UTC(yy, mm, 0)).toISOString().slice(0, 10);
+  if (dur === '3m'){
+    const off = (m - 9 + 12) % 12, so = off - off % 3;
+    const sm = ((8 + so) % 12) + 1, sy = sm > m ? y - 1 : y;
+    const em = ((sm - 1 + 2) % 12) + 1, ey = em < sm ? sy + 1 : sy;
+    return { key: `${sy}-${pad(sm)}`, nombre: sy === ey ? `${MESES[sm - 1]}–${MESES[em - 1]} ${sy}` : `${MESES[sm - 1]} ${sy}–${MESES[em - 1]} ${ey}`, fin: ultimoDia(ey, em) };
+  }
+  if (dur === 'curso'){ const sy = m >= 9 ? y : y - 1; return { key: `${sy}-09`, nombre: `Curso ${sy}-${String(sy + 1).slice(2)}`, fin: `${sy + 1}-06-30` }; }
+  if (dur === 'anio') return { key: `${y}-01`, nombre: `Año ${y}`, fin: `${y}-12-31` };
+  const sm = m - ((m - 1) % 2), em = sm + 1;    // 2 meses: Ene–Feb, Mar–Abr … Sep–Oct, Nov–Dic
+  return { key: `${y}-${pad(sm)}`, nombre: `${MESES[sm - 1]}–${MESES[em - 1]} ${y}`, fin: ultimoDia(y, em) };
+}
+
+/* Ranking de una temporada. Desempate: quien envió antes su resultado en la última americana que jugaron ambos. */
 function calcRanking(resultados, jornadas, tid){
   const jk = {}; jornadas.forEach(j => jk[j.id] = jornadaKey(j));
   const st = {};
   resultados.forEach(r => {
-    if (r.temporadaId !== tid || r.estado !== 'aprobado') return;
+    if (!tid || r.temporadaId !== tid || r.estado !== 'aprobado') return;
     const s = st[r.playerId] || (st[r.playerId] = { pid: r.playerId, pts: 0, asist: 0, gan: 0, per: 0, porJ: {} });
     s.pts += PTS[r.resultado] || 0;
     s.asist++;
@@ -309,8 +336,7 @@ function calcRanking(resultados, jornadas, tid){
     s.porJ[r.jornadaId] = tsMs(r.ts);
   });
   const cmpDesempate = (a, b) => {
-    const comunes = Object.keys(a.porJ).filter(j => j in b.porJ)
-      .sort((x, y) => (jk[y] || '').localeCompare(jk[x] || ''));
+    const comunes = Object.keys(a.porJ).filter(j => j in b.porJ).sort((x, y) => (jk[y] || '').localeCompare(jk[x] || ''));
     if (comunes.length){ const d = a.porJ[comunes[0]] - b.porJ[comunes[0]]; if (d) return d; }
     return b.asist - a.asist;
   };
@@ -322,11 +348,11 @@ function calcRanking(resultados, jornadas, tid){
     s.distAnterior = prev ? prev.pts - s.pts : null;
   });
   const porAsistencia = [...porPuntos].sort((a, b) => (b.asist - a.asist) || (a.pos - b.pos));
+  porAsistencia.forEach((s, i) => s.posA = i + 1);
   return { porPuntos, porAsistencia };
 }
 
-/* Propuesta de primer partido: pistas por nivel (pista 1 = más nivel),
-   respetando parejas fijas. En cada pista con 4 sueltos: 1º+4º vs 2º+3º. */
+/* Propuesta de primer partido: pista 1 = más nivel, respetando parejas fijas. 4 sueltos: 1º+4º vs 2º+3º. */
 function generarPropuesta(inscritos, nivelDe){
   const ids = new Set(inscritos.map(i => i.id));
   const usados = new Set(), pares = [];
@@ -337,8 +363,7 @@ function generarPropuesta(inscritos, nivelDe){
     pares.push({ pair: [i.id, p], lvl: (nivelDe(i.id) + nivelDe(p)) / 2 });
   });
   pares.sort((a, b) => b.lvl - a.lvl);
-  const sueltos = inscritos.filter(i => !usados.has(i.id))
-    .map(i => ({ id: i.id, lvl: nivelDe(i.id) })).sort((a, b) => b.lvl - a.lvl);
+  const sueltos = inscritos.filter(i => !usados.has(i.id)).map(i => ({ id: i.id, lvl: nivelDe(i.id) })).sort((a, b) => b.lvl - a.lvl);
   const nPistas = Math.floor(inscritos.length / 4);
   let pi = 0, si = 0;
   const pistas = [], reservas = [];
@@ -365,7 +390,19 @@ function generarPropuesta(inscritos, nivelDe){
   return { pistas, reservas };
 }
 
-/* Quién está a tiro (≤ 8 puntos) en la última americana */
+/* Cuentas de plazas: quién entra, quién sobra y quién está en lista de espera (por orden de inscripción) */
+function calcPlazas(activosOrdenados, minPistas, maxPistas){
+  const max = (maxPistas || 8) * 4, min = (minPistas || 4) * 4;
+  const dentro = activosOrdenados.slice(0, max), espera = activosOrdenados.slice(max);
+  const pistas = Math.floor(dentro.length / 4), sobran = dentro.length % 4;
+  return {
+    total: activosOrdenados.length, dentro, espera, pistas, sobran,
+    juegan: dentro.slice(0, pistas * 4), reservas: dentro.slice(pistas * 4),
+    faltanOtra: dentro.length >= max ? 0 : 4 - sobran,
+    faltanMin: Math.max(0, min - dentro.length), lleno: dentro.length >= max
+  };
+}
+
 function aTiro(porPuntos, pid){
   const i = porPuntos.findIndex(s => s.pid === pid);
   if (i < 0) return { arriba: [], abajo: [] };
@@ -375,7 +412,7 @@ function aTiro(porPuntos, pid){
     abajo: porPuntos.slice(i + 1).filter(s => me.pts - s.pts <= MAX_PTS_JORNADA).map(s => ({ pid: s.pid, dif: me.pts - s.pts }))
   };
 }
-if (typeof module !== 'undefined') module.exports = { PTS, tsMs, calcRanking, generarPropuesta, aTiro };
+if (typeof module !== 'undefined') module.exports = { PTS, tsMs, periodo, calcRanking, generarPropuesta, calcPlazas, aTiro };
 </script>
 
 <!-- ================= APP (Firebase) ================= -->
@@ -383,7 +420,7 @@ if (typeof module !== 'undefined') module.exports = { PTS, tsMs, calcRanking, ge
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, serverTimestamp, writeBatch }
+import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, getDocs, serverTimestamp, writeBatch }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ---------- CONFIGURACIÓN ---------- */
@@ -396,9 +433,16 @@ const firebaseConfig = {
   appId: "1:227155783201:web:3794c516d8ec15a7a9bd60"
 };
 const ADMIN_EMAILS = ["marialuzq@gmail.com", "charoj@gmail.com"];  // ← deben coincidir con las reglas
-const NOTIFY_URL = "";   // ← URL del Apps Script para avisar por email de nuevas altas (vacío = sin aviso)
-const EMAIL_DOMINIO = "jugador.matinales-padel.app";  // email interno de cada jugador
-const pinPass = pin => `mp-${pin}-padel`;             // Firebase exige 6+ caracteres
+const NOTIFY_URL = "";   // ← URL del Apps Script (aviso-app.gs) para avisos por email (vacío = sin email)
+const EMAIL_DOMINIO = "jugador.matinales-padel.app";
+const pinPass = pin => `mp-${pin}-padel`;
+
+const CIRCUITOS_INICIALES = [
+  { id: 'matinales', nombre: 'Matinales', emoji: '🌅', tipoRanking: 'puntos', duracion: '2m', acceso: 'todos', minPistas: 4, maxPistas: 8, orden: 1 },
+  { id: 'onlygirls', nombre: 'Only Girls', emoji: '💜', tipoRanking: 'asistencia', duracion: 'curso', acceso: 'marcados', minPistas: 2, maxPistas: 8, orden: 2 }
+];
+const TIPOS = { puntos: 'Puntos + asistencia', asistencia: 'Solo asistencia', ninguno: 'Sin ranking' };
+const DURS = { '2m': 'Cada 2 meses', '3m': 'Cada 3 meses', curso: 'Curso (sept–junio)', anio: 'Año natural' };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -407,41 +451,37 @@ const db = getFirestore(app);
 /* ---------- ESTADO ---------- */
 const S = {
   user: null, isAdmin: false,
-  players: {}, priv: {}, solicitudes: [], miSolicitud: undefined,
-  temporadas: [], jornadas: [], resultados: [], inscritos: {},
-  view: 'inicio', admTab: 'jornada', rankMode: 'puntos', rankTemp: null,
-  admJ: null, draft: null, sel: null, editPid: null, asPid: null, loaded: { players: false, jornadas: false, resultados: false }
+  players: {}, priv: {}, solicitudes: [], miSolicitud: undefined, bajas: [],
+  circuitos: [], temporadasViejas: [], jornadas: [], resultados: [], inscritos: {},
+  view: 'inicio', admTab: 'jornada', rankMode: 'puntos', rankCirc: null, rankTemp: null, ameJ: null,
+  admJ: null, draft: null, sel: null, editPid: null, asPid: null, sust: null, lista: null, editCirc: null,
+  loaded: { players: false, jornadas: false, resultados: false, circuitos: false, temporadas: false }
 };
 const insUnsub = {};
-let adminUnsubs = [], solUnsub = null;
+let adminUnsubs = [], solUnsub = null, migrando = false;
 
 /* ---------- UTILIDADES ---------- */
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const nom = pid => S.players[pid]?.nombre || '—';
 const nivel = pid => { const n = parseFloat(S.priv[pid]?.nivel); return isNaN(n) ? 2 : n; };
-const normTxt = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
-const telDe = pid => soloDig(S.priv[pid]?.telefono);
-function parecidos(nombre){
-  const w = normTxt(nombre).split(' ').filter(x => x.length > 1);
-  if (!w.length) return [];
-  return jugadoresActivos().filter(p => {
-    const pw = normTxt(p.nombre).split(' ');
-    return pw[0] === w[0] || w.filter(x => pw.includes(x)).length >= 2;
-  });
-}
 const soloDig = s => String(s || '').replace(/\D/g, '').replace(/^34(?=\d{9}$)/, '');
-function toast(msg, ms = 2600){ const t = $('toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', ms); }
+const normTxt = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+const telDe = pid => soloDig(S.priv[pid]?.telefono);
+const hoy = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+function toast(msg, ms = 2800){ const t = $('toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', ms); }
 function fmtFecha(j, largo = true){
   if (!j?.fecha) return '';
   const d = new Date(j.fecha + 'T' + (j.hora || '00:00'));
-  const f = d.toLocaleDateString('es-ES', largo ? { weekday: 'long', day: 'numeric', month: 'long' } : { day: 'numeric', month: 'short' });
+  const f = d.toLocaleDateString('es-ES', largo ? { weekday: 'long', day: 'numeric', month: 'long' } : { weekday: 'short', day: 'numeric', month: 'short' });
   return f.charAt(0).toUpperCase() + f.slice(1) + (largo && j.hora ? ' · ' + j.hora + ' h' : '');
 }
 const fmtHora = t => new Date(tsMs(t)).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+function hace(t){ const m = Math.round((Date.now() - tsMs(t)) / 60000); if (m < 1) return 'ahora mismo'; if (m < 60) return `hace ${m} min`; const h = Math.round(m / 60); if (h < 48) return `hace ${h} h`; return `hace ${Math.round(h / 24)} días`; }
+const horasPara = j => (new Date(j.fecha + 'T' + (j.hora || '00:00')).getTime() - Date.now()) / 3600000;
 const ESTADOS = { abierta: ['Inscripciones abiertas', 'mint'], en_juego: ['En juego', 'peach'], cerrada: ['Cerrada', ''] };
 const estadoChip = e => `<span class="chip ${ESTADOS[e]?.[1] || ''}">${ESTADOS[e]?.[0] || e}</span>`;
-const RES_TXT = { ganado: '🏆 Ganó', perdido: '🤝 Perdió', asistencia: '📅 Solo asistencia' };
+const RES_TXT = { ganado: '🏆 Ganó', perdido: '🤝 Perdió', asistencia: '📅 Asistió' };
 function errMsg(e){
   const c = e?.code || '';
   if (c.includes('permission-denied')) return 'No tienes permiso para hacer eso.';
@@ -453,38 +493,51 @@ function errMsg(e){
 }
 function fillSelect(sel, opts, placeholder){
   const cur = sel.value;
-  sel.innerHTML = (placeholder ? `<option value="">${esc(placeholder)}</option>` : '') +
-    opts.map(o => `<option value="${esc(o.v)}">${esc(o.t)}</option>`).join('');
+  sel.innerHTML = (placeholder ? `<option value="">${esc(placeholder)}</option>` : '') + opts.map(o => `<option value="${esc(o.v)}">${esc(o.t)}</option>`).join('');
   if ([...sel.options].some(o => o.value === cur)) sel.value = cur;
 }
+function notificar(data){ if (NOTIFY_URL) fetch(NOTIFY_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) }).catch(() => {}); }
 
 /* ---------- DERIVADOS ---------- */
+const circ = id => S.circuitos.find(c => c.id === id) || { id, nombre: 'Americana', emoji: '🎾', tipoRanking: 'puntos', duracion: '2m', acceso: 'todos' };
+const circChip = cid => { const c = circ(cid); return `<span class="circ-chip${c.acceso === 'marcados' ? ' og' : ''}">${esc(c.emoji || '')} ${esc(c.nombre)}</span>`; };
+const jLabel = j => `${circ(j.circuitoId).emoji || ''} ${circ(j.circuitoId).nombre} · ${fmtFecha(j, false)}`;
 const jornadasOrd = () => [...S.jornadas].sort((a, b) => jornadaKey(a).localeCompare(jornadaKey(b)));
-function jornadaActual(){
-  const js = jornadasOrd();
-  return js.find(j => j.estado !== 'cerrada') || js[js.length - 1] || null;
-}
-const tempActiva = () => S.temporadas.find(t => t.estado === 'activa') || null;
-const tempsOrd = () => [...S.temporadas].sort((a, b) => (b.inicio || '').localeCompare(a.inicio || ''));
 const me = () => {
-  if (S.isAdmin) return S.asPid ? S.players[S.asPid] || null : null;   // modo prueba "ver como jugador"
+  if (S.isAdmin) return S.asPid ? S.players[S.asPid] || null : null;
   return S.user ? Object.values(S.players).find(p => p.uid === S.user.uid) || null : null;
 };
 const jugadoresActivos = () => Object.values(S.players).filter(p => p.estado !== 'baja').sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+const puedeCirc = (p, cid) => circ(cid).acceso !== 'marcados' || (p?.circuitos || []).includes(cid);
+function visible(j){
+  if (S.isAdmin && !S.asPid) return true;
+  if ((j.acceso || 'todos') !== 'marcados') return true;
+  const m = me(); return !!m && (m.circuitos || []).includes(j.circuitoId);
+}
+const cuentaParaRanking = j => !j.amistosa && circ(j.circuitoId).tipoRanking === 'puntos';
+const usaLista = j => !cuentaParaRanking(j);   // asistencia se pasa lista en vez de Ganado/Perdido
 const resJ = jid => S.resultados.filter(r => r.jornadaId === jid).sort((a, b) => tsMs(a.ts) - tsMs(b.ts));
-const ultimaActiva = () => { const t = tempActiva(); return t && S.jornadas.find(j => j.temporadaId === t.id && j.ultima && j.estado !== 'cerrada'); };
+const activos = jid => S.inscritos[jid] || [];
+const plazasDe = j => calcPlazas(activos(j.id), j.minPistas, j.maxPistas);
+function temporadasDe(cid){
+  const m = {};
+  S.jornadas.filter(j => j.circuitoId === cid && j.temporadaId).forEach(j => { m[j.temporadaId] = { id: j.temporadaId, nombre: j.temporadaNombre, fin: j.temporadaFin }; });
+  return Object.values(m).sort((a, b) => b.id.localeCompare(a.id));
+}
+function tempActual(cid){ const ts = temporadasDe(cid); const h = hoy(); return [...ts].reverse().find(t => t.fin >= h) || ts[0] || null; }
+const circsConRanking = () => S.circuitos.filter(c => c.tipoRanking !== 'ninguno');
 
 /* ---------- FIREBASE: ESCUCHAS ---------- */
 const onErr = e => { console.error(e); toast(errMsg(e), 4000); };
 onSnapshot(collection(db, 'players'), s => { S.players = {}; s.forEach(d => S.players[d.id] = { id: d.id, ...d.data() }); S.loaded.players = true; render(); }, onErr);
-onSnapshot(collection(db, 'temporadas'), s => { S.temporadas = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); }, onErr);
-onSnapshot(collection(db, 'resultados'), s => { S.resultados = s.docs.map(d => ({ id: d.id, ...d.data() })); S.loaded.resultados = true; render(); }, onErr);
+onSnapshot(collection(db, 'circuitos'), s => { S.circuitos = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.orden || 9) - (b.orden || 9)); S.loaded.circuitos = true; migrar(); render(); }, onErr);
+onSnapshot(collection(db, 'temporadas'), s => { S.temporadasViejas = s.docs.map(d => ({ id: d.id, ...d.data() })); S.loaded.temporadas = true; migrar(); }, () => {});
+onSnapshot(collection(db, 'resultados'), s => { S.resultados = s.docs.map(d => ({ id: d.id, ...d.data() })); S.loaded.resultados = true; migrar(); render(); }, onErr);
 onSnapshot(collection(db, 'jornadas'), s => {
   S.jornadas = s.docs.map(d => ({ id: d.id, ...d.data() }));
   S.loaded.jornadas = true;
   S.jornadas.filter(j => j.estado !== 'cerrada').forEach(j => subInscritos(j.id));
-  if (S.admJ && !S.jornadas.some(j => j.id === S.admJ)) S.admJ = null;
-  render();
+  migrar(); render();
 }, onErr);
 
 function subInscritos(jid){
@@ -500,20 +553,43 @@ onAuthStateChanged(auth, u => {
   S.isAdmin = !!u && ADMIN_EMAILS.includes((u.email || '').toLowerCase());
   adminUnsubs.forEach(f => f()); adminUnsubs = [];
   if (solUnsub){ solUnsub(); solUnsub = null; }
-  S.priv = {}; S.solicitudes = []; S.miSolicitud = undefined;
+  S.priv = {}; S.solicitudes = []; S.bajas = []; S.miSolicitud = undefined;
   if (S.isAdmin){
     adminUnsubs.push(onSnapshot(collection(db, 'privado'), s => { S.priv = {}; s.forEach(d => S.priv[d.id] = d.data()); render(); }, onErr));
     adminUnsubs.push(onSnapshot(collection(db, 'solicitudes'), s => { S.solicitudes = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); }, onErr));
+    adminUnsubs.push(onSnapshot(collection(db, 'bajas'), s => { S.bajas = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => tsMs(b.ts) - tsMs(a.ts)); render(); }, onErr));
   } else if (u){
     solUnsub = onSnapshot(doc(db, 'solicitudes', u.uid), d => { S.miSolicitud = d.exists() ? d.data() : null; render(); }, () => {});
   }
-  if (!S.isAdmin && S.view === 'admin') S.view = 'inicio';
-  render();
+  if (!S.isAdmin){ S.asPid = null; if (S.view === 'admin') S.view = 'inicio'; }
+  migrar(); render();
 });
+
+/* ---------- MIGRACIÓN (una sola vez, la hace una administradora) ---------- */
+async function migrar(){
+  if (!S.isAdmin || migrando || !S.loaded.circuitos || !S.loaded.jornadas || !S.loaded.resultados || !S.loaded.temporadas) return;
+  const sinCirc = S.jornadas.filter(j => !j.circuitoId);
+  if (S.circuitos.length && !sinCirc.length && !S.temporadasViejas.length) return;
+  migrando = true;
+  try {
+    const b = writeBatch(db);
+    if (!S.circuitos.length) CIRCUITOS_INICIALES.forEach(({ id, ...c }) => b.set(doc(db, 'circuitos', id), c));
+    sinCirc.forEach(j => {
+      const p = periodo('2m', j.fecha);
+      const tid = `matinales_${p.key}`;
+      b.update(doc(db, 'jornadas', j.id), { circuitoId: 'matinales', acceso: 'todos', amistosa: false, temporadaId: tid, temporadaNombre: p.nombre, temporadaFin: p.fin, minPistas: 4, maxPistas: 8 });
+      S.resultados.filter(r => r.jornadaId === j.id).forEach(r => b.update(doc(db, 'resultados', r.id), { temporadaId: tid }));
+    });
+    S.temporadasViejas.forEach(t => b.delete(doc(db, 'temporadas', t.id)));
+    await b.commit();
+    toast('App actualizada a circuitos ✅');
+  } catch (e){ console.error(e); toast(errMsg(e), 5000); }
+  setTimeout(() => { migrando = false; }, 3000);
+}
 
 /* ---------- RENDER ---------- */
 let pendingRender = false;
-const editing = () => { const a = document.activeElement; return a && /INPUT|SELECT|TEXTAREA/.test(a.tagName) && a.closest('.live'); };
+const editing = () => { const a = document.activeElement; return a && /INPUT|SELECT|TEXTAREA/.test(a.tagName) && a.type !== 'checkbox' && a.closest('.live'); };
 function render(){ if (editing()){ pendingRender = true; return; } pendingRender = false; doRender(); }
 document.addEventListener('focusout', () => { if (pendingRender) setTimeout(() => { if (!editing() && pendingRender) render(); }, 350); });
 
@@ -527,154 +603,206 @@ function doRender(){
   if (S.isAdmin) renderAdmin();
 }
 
+/* ----- Avisos grandes de bajas (administradoras) ----- */
+function alarmaBajas(){
+  const pend = S.bajas.filter(b => !b.visto);
+  if (!pend.length) return '';
+  return `<div class="alarm"><h2>⚠️ ${pend.length === 1 ? 'HAY 1 BAJA' : `HAY ${pend.length} BAJAS`} SIN RESOLVER</h2>${pend.map(b => {
+    const j = S.jornadas.find(x => x.id === b.jornadaId);
+    return `<div class="it"><div class="n">${esc(nom(b.playerId))}</div>
+      <div>se ha desapuntado de ${j ? esc(jLabel(j)) : 'una americana'} · ${hace(b.ts)}</div>
+      ${b.tardia ? '<span class="tardia">⏰ BAJA DE ÚLTIMA HORA (&lt; 24 h)</span>' : ''}
+      <div class="row" style="margin-top:8px">${j && j.estado !== 'cerrada' ? `<button class="btn sm rose" data-act="buscarSust" data-j="${b.jornadaId}" data-p="${b.playerId}" data-b="${b.id}">🔄 Buscar sustituto</button>` : ''}<button class="btn sm sec" data-act="bajaVista" data-b="${b.id}">✓ Visto</button></div></div>`;
+  }).join('')}</div>`;
+}
+
 /* ----- Inicio ----- */
 function renderInicio(){
-  const j = jornadaActual(), m = me(), t = tempActiva();
-  const ult = ultimaActiva();
-  const rk = t ? calcRanking(S.resultados, S.jornadas, t.id) : null;
+  const m = me();
+  // Avisos arriba
+  let bell = '';
+  if (S.isAdmin && m) bell += `<div class="bell" style="background:var(--lav);color:var(--lav-strong);border-color:#d9d0f5">👁️ <b>Modo prueba:</b> estás viendo la app como <b>${esc(m.nombre)}</b>. Lo que hagas se guarda de verdad a su nombre.
+      <div class="row"><button class="btn sm" style="background:#fff;color:var(--lav-strong)" data-act="verComo" data-p="">Salir del modo prueba</button></div></div>`;
+  if (S.isAdmin){
+    bell += alarmaBajas();
+    const nSol = S.solicitudes.length, nRes = S.resultados.filter(r => r.estado === 'pendiente').length;
+    if (nSol || nRes) bell += `<div class="bell">🔔 Tienes ${[nSol ? `<b>${nSol}</b> solicitud${nSol > 1 ? 'es' : ''} de alta` : '', nRes ? `<b>${nRes}</b> resultado${nRes > 1 ? 's' : ''} por validar` : ''].filter(Boolean).join(' y ')}
+      <div class="row">${nSol ? '<button class="btn sm" style="background:#fff;color:var(--rose-strong);border:1px solid #f5c6cc" data-act="irAdm" data-v="jugadores">Ver altas</button>' : ''}${nRes ? '<button class="btn sm" style="background:#fff;color:var(--rose-strong);border:1px solid #f5c6cc" data-act="irAdm" data-v="resultados">Ver resultados</button>' : ''}</div></div>`;
+  }
+  $('ini-bell').innerHTML = bell;
 
   // Banner última americana
   let b = '';
-  if (ult){
-    b = `<div class="banner"><b>🏁 ¡Última americana del ranking!</b>${esc(fmtFecha(ult))}. Los puntos de ese día cierran la temporada <i>${esc(t.nombre)}</i>.`;
-    if (m && rk){
+  jornadasOrd().filter(j => j.ultima && j.estado !== 'cerrada' && cuentaParaRanking(j) && visible(j)).forEach(j => {
+    const rk = calcRanking(S.resultados, S.jornadas, j.temporadaId);
+    b += `<div class="banner"><b>🏁 ¡Última americana del ranking ${esc(circ(j.circuitoId).nombre)}!</b>${esc(fmtFecha(j))}. Los puntos de ese día cierran la temporada <i>${esc(j.temporadaNombre)}</i>.`;
+    if (m){
       const at = aTiro(rk.porPuntos, m.id);
       if (at.arriba.length) b += `<div style="margin-top:8px">🔥 Puedes alcanzar a: ${at.arriba.map(x => `<b style="display:inline">${esc(nom(x.pid))}</b> (${x.dif ? 'a ' + x.dif + ' pts' : 'empatados'})`).join(', ')}</div>`;
       if (at.abajo.length) b += `<div style="margin-top:6px">👀 Te pueden pasar: ${at.abajo.slice(0, 4).map(x => `${esc(nom(x.pid))} (a ${x.dif})`).join(', ')}</div>`;
-    } else if (rk){
+    } else {
       const duelos = [];
       rk.porPuntos.slice(0, 6).forEach((s, i, a) => { if (i && s.distAnterior <= MAX_PTS_JORNADA) duelos.push(`${esc(nom(a[i - 1].pid))} vs ${esc(nom(s.pid))} (${s.distAnterior} pts)`); });
       if (duelos.length) b += `<div style="margin-top:8px">🔥 Duelos ajustados: ${duelos.join(' · ')}</div>`;
     }
     b += `</div>`;
-  }
+  });
   $('ini-banner').innerHTML = b;
 
-  // Aviso para administradoras
-  let bell = '';
-  if (S.isAdmin){
-    const nSol = S.solicitudes.length, nRes = S.resultados.filter(r => r.estado === 'pendiente').length;
-    if (nSol || nRes) bell = `<div class="bell">🔔 Tienes ${[nSol ? `<b>${nSol}</b> solicitud${nSol > 1 ? 'es' : ''} de alta` : '', nRes ? `<b>${nRes}</b> resultado${nRes > 1 ? 's' : ''} por validar` : ''].filter(Boolean).join(' y ')}
-      <div class="row">${nSol ? '<button class="btn sm" style="background:#fff;color:var(--rose-strong);border:1px solid #f5c6cc" data-act="irAdm" data-v="jugadores">Ver altas</button>' : ''}${nRes ? '<button class="btn sm" style="background:#fff;color:var(--rose-strong);border:1px solid #f5c6cc" data-act="irAdm" data-v="resultados">Ver resultados</button>' : ''}</div></div>`;
-  }
-  if (S.isAdmin && m) bell = `<div class="bell" style="background:var(--lav);color:var(--lav-strong);border-color:#d9d0f5">👁️ <b>Modo prueba:</b> estás viendo la app como <b>${esc(m.nombre)}</b>. Lo que hagas (apuntarte, enviar resultado) se guarda de verdad a su nombre.
-      <div class="row"><button class="btn sm" style="background:#fff;color:var(--lav-strong)" data-act="verComo" data-p="">Salir del modo prueba</button></div></div>` + bell;
-  $('ini-bell').innerHTML = bell;
-
-  // Jornada
+  // Americanas abiertas
   let h = '';
+  const prox = jornadasOrd().filter(j => j.estado !== 'cerrada' && visible(j));
   if (!S.loaded.jornadas) h = `<div class="card empty">Cargando…</div>`;
-  else if (!j) h = `<div class="card"><h2>Próxima americana</h2><p class="empty">Todavía no hay americanas creadas.</p></div>`;
-  else {
-    const ins = S.inscritos[j.id] || [];
-    const miIns = m && ins.find(i => i.id === m.id);
-    h = `<div class="card"><h2>${j.estado === 'cerrada' ? 'Última americana' : 'Próxima americana'}</h2>
-      <div style="font-weight:700;font-size:1.05rem">${esc(fmtFecha(j))}</div>
-      <div style="margin:6px 0">${estadoChip(j.estado)} ${j.ultima ? '<span class="chip peach">🏁 Última del ranking</span>' : ''} <span class="chip blue">${ins.length} apuntados</span></div>`;
-    if (m && j.estado === 'abierta'){
-      if (miIns) h += `<div class="alert">✅ Estás apuntado/a${miIns.parejaId ? ' con ' + esc(nom(miIns.parejaId)) : ''}.</div>
-          <button class="btn rose" data-act="desapuntarme" data-j="${j.id}">Desapuntarme</button>`;
-      else h += `<label>¿Vienes con pareja fija? (opcional)</label>
-          <select id="ins-pareja"><option value="">Sin pareja fija</option>${jugadoresActivos().filter(p => p.id !== m.id).map(p => `<option value="${p.id}">${esc(p.nombre)}</option>`).join('')}</select>
-          <button class="btn mint" data-act="apuntarme" data-j="${j.id}">✋ Me apunto</button>`;
-    } else if (!S.user) h += `<p class="muted" style="margin-top:6px">Entra en <b>Perfil</b> para apuntarte y subir tu resultado.</p>`;
-    // Mi pista
-    if (m && j.pistas){
-      const k = j.pistas.findIndex(p => [p.a1, p.a2, p.b1, p.b2].includes(m.id));
-      if (k >= 0){ const p = j.pistas[k]; const comp = p.a1 === m.id ? p.a2 : p.a2 === m.id ? p.a1 : p.b1 === m.id ? p.b2 : p.b1;
-        const riv = [p.a1, p.a2].includes(m.id) ? [p.b1, p.b2] : [p.a1, p.a2];
-        h += `<div class="alert">🎾 Empiezas en la <b>pista ${k + 1}</b> con ${esc(nom(comp))} contra ${esc(nom(riv[0]))} y ${esc(nom(riv[1]))}.</div>`; }
-    }
-    h += `</div>`;
-  }
-  $('ini-jornada').innerHTML = h;
+  else if (!prox.length) h = `<div class="card"><h2>Próximas americanas</h2><p class="empty">No hay americanas abiertas ahora mismo.</p></div>`;
+  else prox.forEach(j => h += cardJornada(j, m));
+  if (!S.user && prox.length) h += `<div class="card center"><p>Entra en <b>👤 Perfil</b> para apuntarte y subir tu resultado.</p></div>`;
+  $('ini-jornadas').innerHTML = h;
 
-  // Resultado
-  let r = '';
-  if (m && j && j.estado !== 'cerrada'){
+  // Top de cada circuito con ranking
+  let tp = '';
+  circsConRanking().forEach(c => {
+    if (!visibleCirc(c)) return;
+    const t = tempActual(c.id); if (!t) return;
+    const rk = calcRanking(S.resultados, S.jornadas, t.id);
+    const modo = c.tipoRanking === 'puntos' ? 'puntos' : 'asistencia';
+    const lista = modo === 'puntos' ? rk.porPuntos : rk.porAsistencia;
+    if (!lista.length) return;
+    tp += `<div class="card"><h2>${esc(c.emoji || '')} Top 5 ${esc(c.nombre)} · ${esc(t.nombre)}</h2>${lista.slice(0, 5).map(s => rankRow(s, modo, m, t.id)).join('')}
+      <button class="btn sec" data-act="verRanking" data-c="${c.id}">Ver ranking completo</button></div>`;
+  });
+  $('ini-top').innerHTML = tp;
+}
+function visibleCirc(c){ if (S.isAdmin && !S.asPid) return true; if (c.acceso !== 'marcados') return true; const m = me(); return !!m && (m.circuitos || []).includes(c.id); }
+
+function cardJornada(j, m){
+  const c = circ(j.circuitoId), P = plazasDe(j);
+  const ins = activos(j.id);
+  const miIdx = m ? ins.findIndex(i => i.id === m.id) : -1;
+  let h = `<div class="card"><div style="margin-bottom:6px">${circChip(j.circuitoId)} ${j.amistosa ? '<span class="chip">🤝 Amistosa</span>' : ''} ${j.ultima ? '<span class="chip peach">🏁 Última del ranking</span>' : ''}</div>
+    <div style="font-weight:800;font-size:1.1rem">${esc(fmtFecha(j))}</div>
+    <div style="margin:6px 0">${estadoChip(j.estado)}</div>
+    <div class="counter"><span class="big">${P.total}</span> apuntados · <b>${P.pistas}</b> pista${P.pistas === 1 ? '' : 's'}${P.espera.length ? ` · ${P.espera.length} en espera` : ''}
+      ${j.estado === 'abierta' && !P.lleno ? `<div class="small" style="margin-top:4px">${P.faltanMin ? `🙏 Faltan <b>${P.faltanMin}</b> para llegar al mínimo (${j.minPistas || 4} pistas)` : `🎾 ¡Faltan <b>${P.faltanOtra}</b> para abrir otra pista! Si conoces a alguien, que se apunte`}</div>` : ''}
+      ${P.lleno ? '<div class="small" style="margin-top:4px">✅ Completo. Si te apuntas, entras en lista de espera.</div>' : ''}</div>`;
+  if (m && j.estado === 'abierta' && !puedeCirc(m, j.circuitoId)) h += `<p class="muted">Este circuito es solo para jugadoras invitadas.</p>`;
+  else if (m && j.estado !== 'cerrada'){
+    if (miIdx >= 0){
+      const mi = ins[miIdx];
+      const enEspera = P.espera.some(x => x.id === m.id), reserva = P.reservas.some(x => x.id === m.id);
+      h += `<div class="alert">${enEspera ? `⏳ Estás en <b>lista de espera</b> (nº ${P.espera.findIndex(x => x.id === m.id) + 1}).` : reserva ? '✅ Estás apuntado/a. Ahora mismo <b>sobras</b> para completar pista: si se apunta alguien más, entras seguro.' : '✅ Estás apuntado/a.'}${mi.parejaId ? ' Con ' + esc(nom(mi.parejaId)) + '.' : ''}</div>`;
+      const tarde = horasPara(j) < 24;
+      h += `<button class="btn rose" data-act="desapuntarme" data-j="${j.id}">${tarde ? '⏰ No puedo ir (baja de última hora)' : 'Desapuntarme'}</button>`;
+      if (!tarde) h += `<p class="muted small" style="margin-top:6px">Si no puedes venir, desapúntate con al menos 24 h de antelación para que Luz pueda buscar sustituto.</p>`;
+    } else if (j.estado === 'abierta'){
+      h += `<label>¿Vienes con pareja fija? (opcional)</label>
+        <select id="ins-pareja-${j.id}"><option value="">Sin pareja fija</option>${jugadoresActivos().filter(p => p.id !== m.id && puedeCirc(p, j.circuitoId)).map(p => `<option value="${p.id}">${esc(p.nombre)}</option>`).join('')}</select>
+        <button class="btn mint" data-act="apuntarme" data-j="${j.id}">✋ ${P.lleno ? 'Apuntarme a la lista de espera' : 'Me apunto'}</button>`;
+    }
+  }
+  // Mi pista
+  if (m && j.pistas){
+    const k = j.pistas.findIndex(p => [p.a1, p.a2, p.b1, p.b2].includes(m.id));
+    if (k >= 0){ const p = j.pistas[k]; const comp = p.a1 === m.id ? p.a2 : p.a2 === m.id ? p.a1 : p.b1 === m.id ? p.b2 : p.b1;
+      const riv = [p.a1, p.a2].includes(m.id) ? [p.b1, p.b2] : [p.a1, p.a2];
+      h += `<div class="alert">🎾 Empiezas en la <b>pista ${k + 1}</b> con ${esc(nom(comp))} contra ${esc(nom(riv[0]))} y ${esc(nom(riv[1]))}.</div>`; }
+  }
+  // Resultado (solo circuitos con puntos)
+  if (m && cuentaParaRanking(j)){
     const mio = S.resultados.find(x => x.jornadaId === j.id && x.playerId === m.id);
-    r = `<div class="card"><h2>Resultado del último partido</h2>`;
     if (mio){
       const orden = resJ(j.id).findIndex(x => x.id === mio.id) + 1;
-      r += `<div class="center" style="font-size:1.1rem;font-weight:700">${RES_TXT[mio.resultado]}</div>
+      h += `<h3>Resultado del último partido</h3><div class="center" style="font-size:1.1rem;font-weight:700">${RES_TXT[mio.resultado]}</div>
         <p class="center muted" style="margin-top:6px">Enviado a las ${fmtHora(mio.ts)} · ${orden}º en enviarlo<br>
         ${mio.estado === 'aprobado' ? `<span class="chip mint">✓ Validado · +${PTS[mio.resultado]} pts</span>` : '<span class="chip lav">⏳ Pendiente de validar</span>'}</p>`;
     } else if (j.estado === 'en_juego'){
-      r += `<p class="muted center">Solo cuenta el <b>último partido</b>. ¡Quien lo envía antes gana los empates!</p>
+      h += `<h3>Resultado del último partido</h3><p class="muted center">Solo cuenta el <b>último partido</b>. ¡Quien lo envía antes gana los empates!</p>
         <button class="btn mint big" data-act="enviarRes" data-r="ganado" data-j="${j.id}">🏆 HE GANADO</button>
         <button class="btn sec big" data-act="enviarRes" data-r="perdido" data-j="${j.id}">🤝 He perdido</button>`;
-    } else r += `<p class="muted center">Podrás enviarlo cuando empiece la americana.</p>`;
-    r += `</div>`;
+    }
   }
-  $('ini-resultado').innerHTML = r;
-
-  // Top 5
-  let tp = '';
-  if (t && rk){
-    tp = `<div class="card"><h2>🏆 Top 5 · ${esc(t.nombre)}</h2>${rk.porPuntos.length ? rk.porPuntos.slice(0, 5).map(s => rankRow(s, 'puntos', m)).join('') : '<p class="empty">Aún no hay resultados validados.</p>'}
-      <button class="btn sec" data-act="nav" data-v="ranking">Ver ranking completo</button></div>`;
-  }
-  $('ini-top').innerHTML = tp;
+  h += `<button class="btn sec" data-act="verAmericana" data-j="${j.id}">Ver apuntados y pistas</button></div>`;
+  return h;
 }
 
-function rankRow(s, modo, m){
-  const pos = modo === 'puntos' ? s.pos : s._posA;
+function rankRow(s, modo, m, tid){
+  const pos = modo === 'puntos' ? s.pos : s.posA;
   const cls = (pos <= 3 ? ' p' + pos : '') + (m && m.id === s.pid ? ' me' : '');
-  let sub = `${s.asist} asist. · ${s.gan}G ${s.per}P`;
-  if (modo === 'puntos' && s.empateGanado) sub += ' · <span class="chip lav">desempate: envió antes</span>';
-  if (modo === 'puntos' && ultimaActiva() && s.distAnterior != null && s.distAnterior <= MAX_PTS_JORNADA) sub += ` · <span class="chip peach">a ${s.distAnterior} del anterior</span>`;
+  const conPuntos = modo === 'puntos';
+  let sub = conPuntos ? `${s.asist} asist. · ${s.gan}G ${s.per}P` : `${s.asist} americana${s.asist === 1 ? '' : 's'}`;
+  const ult = S.jornadas.some(j => j.ultima && j.estado !== 'cerrada' && j.temporadaId === tid);
+  if (conPuntos && s.empateGanado) sub += ' · <span class="chip lav">desempate: envió antes</span>';
+  if (conPuntos && ult && s.distAnterior != null && s.distAnterior <= MAX_PTS_JORNADA) sub += ` · <span class="chip peach">a ${s.distAnterior} del anterior</span>`;
   return `<div class="rank-row${cls}"><div class="pos">${pos <= 3 ? ['🥇', '🥈', '🥉'][pos - 1] : pos}</div>
     <div class="who"><div class="n">${esc(nom(s.pid))}</div><div class="muted small">${sub}</div></div>
-    <div class="pts">${modo === 'puntos' ? s.pts : s.asist}</div></div>`;
+    <div class="pts">${conPuntos ? s.pts : s.asist}</div></div>`;
 }
 
 /* ----- Ranking ----- */
 function renderRanking(){
-  const ts = tempsOrd();
-  if (!S.rankTemp || !ts.some(t => t.id === S.rankTemp)) S.rankTemp = (tempActiva() || ts[0] || {}).id || null;
-  fillSelect($('rank-temp'), ts.map(t => ({ v: t.id, t: t.nombre + (t.estado === 'activa' ? ' (en curso)' : ' (cerrada)') })));
+  const cs = circsConRanking().filter(visibleCirc);
+  if (!S.rankCirc || !cs.some(c => c.id === S.rankCirc)) S.rankCirc = cs[0]?.id || null;
+  $('rank-circs').innerHTML = cs.length > 1 ? cs.map(c => `<button data-act="rankCirc" data-v="${c.id}" class="${c.id === S.rankCirc ? 'on' : ''}">${esc(c.emoji || '')} ${esc(c.nombre)}</button>`).join('') : '';
+  $('rank-circs').classList.toggle('hidden', cs.length <= 1);
+  const c = S.rankCirc ? circ(S.rankCirc) : null;
+  const soloAsist = c && c.tipoRanking === 'asistencia';
+  $('rank-modes').classList.toggle('hidden', !c || soloAsist);
+  const modo = soloAsist ? 'asistencia' : S.rankMode;
+  $('seg-puntos').classList.toggle('on', modo === 'puntos');
+  $('seg-asistencia').classList.toggle('on', modo === 'asistencia');
+  const ts = c ? temporadasDe(c.id) : [];
+  if (!S.rankTemp || !ts.some(t => t.id === S.rankTemp)) S.rankTemp = c ? tempActual(c.id)?.id || null : null;
+  fillSelect($('rank-temp'), ts.map(t => ({ v: t.id, t: t.nombre + (t.fin >= hoy() ? ' (en curso)' : ' (finalizada)') })));
   $('rank-temp').value = S.rankTemp || '';
-  $('seg-puntos').classList.toggle('on', S.rankMode === 'puntos');
-  $('seg-asistencia').classList.toggle('on', S.rankMode === 'asistencia');
-  if (!S.rankTemp){ $('rank-list').innerHTML = '<p class="empty">Todavía no hay ninguna temporada.</p>'; $('rank-info').textContent = ''; return; }
+  $('rank-temp').classList.toggle('hidden', !ts.length);
+  if (!c || !S.rankTemp){ $('rank-list').innerHTML = '<p class="empty">Todavía no hay ranking.</p>'; $('rank-info').textContent = ''; return; }
   const rk = calcRanking(S.resultados, S.jornadas, S.rankTemp);
-  rk.porAsistencia.forEach((s, i) => s._posA = i + 1);
-  const lista = S.rankMode === 'puntos' ? rk.porPuntos : rk.porAsistencia;
+  const lista = modo === 'puntos' ? rk.porPuntos : rk.porAsistencia;
   const pend = S.resultados.filter(r => r.temporadaId === S.rankTemp && r.estado === 'pendiente').length;
-  const t = S.temporadas.find(x => x.id === S.rankTemp);
-  $('rank-info').innerHTML = (S.rankMode === 'puntos'
+  $('rank-info').innerHTML = (modo === 'puntos'
     ? 'Asistir +5 · Último partido ganado +3 / perdido +1. Empate: gana quien envió antes su resultado.'
-    : 'Premio a quien más americanas ha jugado en la temporada.') +
-    (pend ? ` <span class="chip lav">${pend} resultado(s) pendientes de validar</span>` : '') +
-    (t?.estado === 'cerrada' && t.ganadorPuntos ? `<br>🏆 Campeón/a: <b>${esc(t.ganadorPuntos)}</b> · 📅 Más asistencias: <b>${esc(t.ganadorAsistencia || '—')}</b>` : '');
-  $('rank-list').innerHTML = lista.length ? lista.map(s => rankRow(s, S.rankMode, me())).join('') : '<p class="empty">Aún no hay resultados validados.</p>';
+    : 'Americanas jugadas en la temporada. ¡Premio a quien más venga!') +
+    (pend ? ` <span class="chip lav">${pend} resultado(s) pendientes de validar</span>` : '');
+  $('rank-list').innerHTML = lista.length ? lista.map(s => rankRow(s, modo, me(), S.rankTemp)).join('') : '<p class="empty">Aún no hay resultados validados.</p>';
 }
 
 /* ----- Americana ----- */
 function renderAmericana(){
-  const j = jornadaActual(), m = me();
+  const js = jornadasOrd().filter(visible);
+  const abiertas = js.filter(j => j.estado !== 'cerrada'), cerradas = js.filter(j => j.estado === 'cerrada').reverse().slice(0, 6);
+  const lista = [...abiertas, ...cerradas];
+  if (!S.ameJ || !lista.some(j => j.id === S.ameJ)) S.ameJ = lista[0]?.id || null;
+  fillSelect($('ame-sel'), lista.map(j => ({ v: j.id, t: jLabel(j) + (j.estado === 'cerrada' ? ' (cerrada)' : '') })));
+  $('ame-sel').value = S.ameJ || '';
+  $('ame-selcard').classList.toggle('hidden', lista.length < 2);
+  const j = S.jornadas.find(x => x.id === S.ameJ), m = me();
   if (!j){ $('ame-content').innerHTML = '<div class="card empty">No hay americanas todavía.</div>'; return; }
-  const ins = S.inscritos[j.id] || [];
-  let h = `<div class="card"><h2>${esc(fmtFecha(j))}</h2>${estadoChip(j.estado)} ${j.ultima ? '<span class="chip peach">🏁 Última del ranking</span>' : ''}</div>`;
+  subInscritos(j.id);
+  const P = plazasDe(j), ids = new Set(activos(j.id).map(i => i.id));
+  let h = `<div class="card">${circChip(j.circuitoId)}<h2 style="margin-top:6px">${esc(fmtFecha(j))}</h2>${estadoChip(j.estado)} ${j.ultima ? '<span class="chip peach">🏁 Última del ranking</span>' : ''} ${j.amistosa ? '<span class="chip">🤝 Amistosa</span>' : ''}</div>`;
   if (j.pistas?.length){
-    h += `<div class="card"><h2>Primer partido</h2>${j.pistas.map((p, k) => courtHTML(p, k, false, m)).join('')}
+    h += `<div class="card"><h2>Primer partido</h2>${j.pistas.map((p, k) => courtHTML(p, k, false, m, ids)).join('')}
       ${j.reservas?.length ? `<p class="muted small">Reservas: ${j.reservas.map(nom).map(esc).join(', ')}</p>` : ''}</div>`;
   }
   const rs = resJ(j.id);
-  if (rs.length){
+  if (rs.length && cuentaParaRanking(j)){
     h += `<div class="card"><h2>Resultados enviados</h2>${rs.map((r, i) => `<div class="list-item"><div class="row" style="flex:1;justify-content:flex-start;gap:10px"><span class="num">${i + 1}</span><div><div class="name">${esc(nom(r.playerId))}</div><div class="muted small">${fmtHora(r.ts)}</div></div></div>
       <div>${RES_TXT[r.resultado]} ${r.estado === 'aprobado' ? '<span class="chip mint">✓</span>' : '<span class="chip lav">⏳</span>'}</div></div>`).join('')}</div>`;
   }
-  h += `<div class="card"><h2>Apuntados (${ins.length})</h2>${ins.length ? ins.map((i, k) => `<div class="list-item"><div class="row" style="justify-content:flex-start;gap:10px"><span class="num">${k + 1}</span><span class="name">${esc(nom(i.id))}</span></div>${i.parejaId ? `<span class="chip blue">con ${esc(nom(i.parejaId))}</span>` : ''}</div>`).join('') : '<p class="empty">Nadie apuntado todavía.</p>'}</div>`;
+  const fila = (i, k, extra) => `<div class="list-item"><div class="row" style="justify-content:flex-start;gap:10px"><span class="num">${k}</span><span class="name">${esc(nom(i.id))}</span></div>${i.parejaId ? `<span class="chip blue">con ${esc(nom(i.parejaId))}</span>` : ''}${extra || ''}</div>`;
+  h += `<div class="card"><h2>Apuntados (${P.total})</h2><div class="counter"><b>${P.pistas}</b> pista${P.pistas === 1 ? '' : 's'} completas${P.sobran ? ` · sobran ${P.sobran}` : ''}${P.espera.length ? ` · ${P.espera.length} en espera` : ''}</div>
+    ${P.dentro.length ? P.dentro.map((i, k) => fila(i, k + 1, P.reservas.some(x => x.id === i.id) ? '<span class="chip peach">sobra</span>' : '')).join('') : '<p class="empty">Nadie apuntado todavía.</p>'}
+    ${P.espera.length ? `<h3>⏳ Lista de espera</h3>${P.espera.map((i, k) => fila(i, k + 1)).join('')}` : ''}</div>`;
   $('ame-content').innerHTML = h;
 }
 
-function courtHTML(p, k, editable, m){
+function courtHTML(p, k, editable, m, activosSet){
   const slot = (key) => {
     const pid = p[key]; const path = `c${k}.${key}`;
+    const baja = activosSet && pid && !activosSet.has(pid);
     const lv = editable ? `<span class="lvl">${nivel(pid).toFixed(1)}</span>` : '';
-    const cls = 'slot' + (S.sel === path ? ' sel' : '') + (m && m.id === pid ? ' mine' : '');
-    return editable ? `<button class="${cls}" data-act="slot" data-p="${path}">${esc(nom(pid))}${lv}</button>` : `<div class="${cls}">${esc(nom(pid))}</div>`;
+    const cls = 'slot' + (S.sel === path ? ' sel' : '') + (m && m.id === pid ? ' mine' : '') + (baja ? ' hueco' : '');
+    const txt = baja ? `⚠️ ${esc(nom(pid))} (baja)` : esc(nom(pid));
+    return editable ? `<button class="${cls}" data-act="slot" data-p="${path}">${txt}${lv}</button>` : `<div class="${cls}">${txt}</div>`;
   };
   const media = (a, b) => ((nivel(p[a]) + nivel(p[b])) / 2).toFixed(2);
   return `<div class="court"><div class="t"><span>Pista ${k + 1}</span>${editable ? `<span class="muted small">${media('a1', 'a2')} vs ${media('b1', 'b2')}</span>` : ''}</div>
@@ -691,100 +819,149 @@ function renderPerfil(){
       <h3>👁️ Probar la app como jugador</h3>
       <p class="muted small">Elige un jugador y verás la app como la vería él: apuntarse, su pista, enviar el resultado, su perfil…</p>
       <select id="ver-como"><option value="">— Elige jugador —</option>${jugadoresActivos().map(p => `<option value="${p.id}"${p.id === S.asPid ? ' selected' : ''}>${esc(p.nombre)}</option>`).join('')}</select>
-      <div class="row"><button class="btn lav" style="background:var(--lav);color:var(--lav-strong)" data-act="verComoSel">Ver como este jugador</button>${S.asPid ? '<button class="btn sec" data-act="verComo" data-p="">Salir del modo prueba</button>' : ''}</div>
+      <div class="row"><button class="btn" style="background:var(--lav);color:var(--lav-strong)" data-act="verComoSel">Ver como este jugador</button>${S.asPid ? '<button class="btn sec" data-act="verComo" data-p="">Salir del modo prueba</button>' : ''}</div>
       <button class="btn sec" data-act="nav" data-v="admin">Ir a Admin</button><button class="btn rose" data-act="logout">Cerrar sesión</button></div>`;
-    const m = me();
     if (m) h += perfilJugador(m);
   } else if (u && !m){
     if (!S.loaded.players || S.miSolicitud === undefined) h = `<div class="card empty">Cargando…</div>`;
     else if (S.miSolicitud) h = `<div class="card center"><h2>⏳ Alta pendiente</h2><p>Hola ${esc(S.miSolicitud.nombre)}, Luz tiene que aprobar tu alta. En cuanto lo haga podrás apuntarte y subir resultados.</p><button class="btn sec" data-act="logout">Salir</button></div>`;
     else h = `<div class="card center"><h2>Cuenta no activa</h2><p class="muted">Tu alta no está activa. Habla con Luz.</p><button class="btn sec" data-act="logout">Salir</button></div>`;
-  } else if (m){
-    h = perfilJugador(m);
-  }
+  } else if (m) h = perfilJugador(m);
   $('perfil-live').innerHTML = h;
 }
 
 function perfilJugador(m){
-  let h = '';
-    const mis = S.resultados.filter(r => r.playerId === m.id && r.estado === 'aprobado');
-    const gan = mis.filter(r => r.resultado === 'ganado').length, per = mis.filter(r => r.resultado === 'perdido').length;
-    const t = tempActiva(); let pos = '—', ptsT = 0, asT = 0;
-    if (t){ const s = calcRanking(S.resultados, S.jornadas, t.id).porPuntos.find(x => x.pid === m.id); if (s){ pos = s.pos + 'º'; ptsT = s.pts; asT = s.asist; } }
-    const jById = Object.fromEntries(S.jornadas.map(j => [j.id, j]));
-    const hist = S.resultados.filter(r => r.playerId === m.id).sort((a, b) => jornadaKey(jById[b.jornadaId] || {}).localeCompare(jornadaKey(jById[a.jornadaId] || {}))).slice(0, 12);
-    h = `<div class="card"><h2>👤 ${esc(m.nombre)}</h2>
-      ${t ? `<h3>Temporada ${esc(t.nombre)}</h3><div class="stats"><div class="stat"><div class="v">${pos}</div><div class="l">Posición</div></div><div class="stat"><div class="v">${ptsT}</div><div class="l">Puntos</div></div><div class="stat"><div class="v">${asT}</div><div class="l">Asistencias</div></div></div>` : ''}
-      <h3>Histórico total</h3><div class="stats"><div class="stat"><div class="v">${mis.length}</div><div class="l">Americanas</div></div><div class="stat"><div class="v">${gan}/${per}</div><div class="l">Ganados/Perdidos</div></div><div class="stat"><div class="v">${gan + per ? Math.round(gan * 100 / (gan + per)) : 0}%</div><div class="l">Victorias</div></div></div>
-      </div>
-      <div class="card"><h2>Mis americanas</h2>${hist.length ? hist.map(r => `<div class="list-item"><span>${esc(fmtFecha(jById[r.jornadaId], false))}</span><span>${RES_TXT[r.resultado]} ${r.estado === 'aprobado' ? `<span class="chip mint">+${PTS[r.resultado]}</span>` : '<span class="chip lav">⏳</span>'}</span></div>`).join('') : '<p class="empty">Todavía no has jugado ninguna.</p>'}
-      ${S.isAdmin ? "" : `<button class="btn sec" data-act="logout">Cerrar sesión</button>`}</div>`;
-    return h;
+  const mis = S.resultados.filter(r => r.playerId === m.id && r.estado === 'aprobado');
+  const gan = mis.filter(r => r.resultado === 'ganado').length, per = mis.filter(r => r.resultado === 'perdido').length;
+  let h = `<div class="card"><h2>👤 ${esc(m.nombre)}</h2>`;
+  circsConRanking().forEach(c => {
+    if (!puedeCirc(m, c.id)) return;
+    const t = tempActual(c.id); if (!t) return;
+    const s = calcRanking(S.resultados, S.jornadas, t.id)[c.tipoRanking === 'puntos' ? 'porPuntos' : 'porAsistencia'].find(x => x.pid === m.id);
+    h += `<h3>${esc(c.emoji || '')} ${esc(c.nombre)} · ${esc(t.nombre)}</h3><div class="stats">
+      <div class="stat"><div class="v">${s ? (c.tipoRanking === 'puntos' ? s.pos : s.posA) + 'º' : '—'}</div><div class="l">Posición</div></div>
+      ${c.tipoRanking === 'puntos' ? `<div class="stat"><div class="v">${s ? s.pts : 0}</div><div class="l">Puntos</div></div>` : ''}
+      <div class="stat"><div class="v">${s ? s.asist : 0}</div><div class="l">Asistencias</div></div></div>`;
+  });
+  h += `<h3>Histórico total</h3><div class="stats"><div class="stat"><div class="v">${mis.length}</div><div class="l">Americanas</div></div><div class="stat"><div class="v">${gan}/${per}</div><div class="l">Ganados/Perdidos</div></div><div class="stat"><div class="v">${gan + per ? Math.round(gan * 100 / (gan + per)) : 0}%</div><div class="l">Victorias</div></div></div></div>`;
+  const jById = Object.fromEntries(S.jornadas.map(j => [j.id, j]));
+  const hist = S.resultados.filter(r => r.playerId === m.id && jById[r.jornadaId]).sort((a, b) => jornadaKey(jById[b.jornadaId]).localeCompare(jornadaKey(jById[a.jornadaId]))).slice(0, 12);
+  h += `<div class="card"><h2>Mis americanas</h2>${hist.length ? hist.map(r => `<div class="list-item"><span>${esc(jLabel(jById[r.jornadaId]))}</span><span>${RES_TXT[r.resultado]} ${r.estado === 'aprobado' ? (cuentaParaRanking(jById[r.jornadaId]) ? `<span class="chip mint">+${PTS[r.resultado]}</span>` : '<span class="chip mint">✓</span>') : '<span class="chip lav">⏳</span>'}</span></div>`).join('') : '<p class="empty">Todavía no has jugado ninguna.</p>'}
+    ${S.isAdmin ? '' : '<button class="btn sec" data-act="logout">Cerrar sesión</button>'}</div>`;
+  return h;
 }
 
 /* ----- Admin ----- */
 function renderAdmin(){
   document.querySelectorAll('.adm').forEach(d => d.classList.toggle('hidden', d.id !== 'adm-' + S.admTab));
   document.querySelectorAll('.subtabs button').forEach(b => b.classList.toggle('on', b.dataset.v === S.admTab));
+  $('adm-alarm').innerHTML = alarmaBajas();
   const js = [...jornadasOrd()].reverse();
-  if (!S.admJ || !S.jornadas.some(j => j.id === S.admJ)) S.admJ = jornadaActual()?.id || null;
-  const jOpts = js.map(j => ({ v: j.id, t: fmtFecha(j, false) + ' · ' + (ESTADOS[j.estado]?.[0] || '') + (j.ultima ? ' 🏁' : '') }));
+  if (!S.admJ || !S.jornadas.some(j => j.id === S.admJ)) S.admJ = (jornadasOrd().find(j => j.estado !== 'cerrada') || js[0] || {}).id || null;
+  const jOpts = js.map(j => ({ v: j.id, t: jLabel(j) + ' · ' + (ESTADOS[j.estado]?.[0] || '') + (j.ultima ? ' 🏁' : '') + (j.amistosa ? ' 🤝' : '') }));
   ['adm-jsel', 'adm-rsel'].forEach(id => { fillSelect($(id), jOpts); $(id).value = S.admJ || ''; });
+  fillSelect($('nj-circ'), S.circuitos.map(c => ({ v: c.id, t: `${c.emoji || ''} ${c.nombre}` })));
   const pend = S.resultados.filter(r => r.estado === 'pendiente').length;
   $('adm-badge-res').innerHTML = pend ? `<span class="chip rose">${pend}</span>` : '';
   $('adm-badge-sol').innerHTML = S.solicitudes.length ? `<span class="chip rose">${S.solicitudes.length}</span>` : '';
+  fillChecks($('nj-circs'), 'nj-c-');
   const j = S.jornadas.find(x => x.id === S.admJ);
   if (j) subInscritos(j.id);
-  renderAdmJornada(j); renderAdmResultados(j); renderAdmJugadores(); renderAdmTemporadas();
+  renderAdmJornada(j); renderAdmResultados(j); renderAdmJugadores(); renderAdmCircuitos();
+}
+function fillChecks(cont, prefix){
+  const marcados = S.circuitos.filter(c => c.acceso === 'marcados');
+  const prev = new Set([...cont.querySelectorAll('input:checked')].map(i => i.value));
+  cont.innerHTML = marcados.length ? `<label>Circuitos a los que puede apuntarse</label>` + marcados.map(c => `<label class="checkrow"><input type="checkbox" value="${c.id}" id="${prefix}${c.id}"${prev.has(c.id) ? ' checked' : ''}> ${esc(c.emoji || '')} ${esc(c.nombre)}</label>`).join('') : '';
 }
 
 function renderAdmJornada(j){
   if (!j){
-    $('adm-jestado').innerHTML = `<p class="empty">${tempActiva() ? 'Crea la primera americana arriba.' : 'Primero crea una temporada en la pestaña 🗓️ Temporadas.'}</p>`;
-    $('adm-inscritos').innerHTML = ''; $('adm-pistas').innerHTML = ''; $('adm-nins').textContent = ''; return;
+    $('adm-jestado').innerHTML = `<p class="empty">Crea la primera americana arriba.</p>`;
+    $('adm-inscritos').innerHTML = ''; $('adm-pistas').innerHTML = ''; return;
   }
-  $('adm-jestado').innerHTML = `<div style="margin:10px 0">${estadoChip(j.estado)} ${j.ultima ? '<span class="chip peach">🏁 Última del ranking</span>' : ''}</div>
+  const c = circ(j.circuitoId);
+  $('adm-jestado').innerHTML = `<div style="margin:10px 0">${circChip(j.circuitoId)} ${estadoChip(j.estado)} ${j.ultima ? '<span class="chip peach">🏁 Última</span>' : ''} ${j.amistosa ? '<span class="chip">🤝 Amistosa</span>' : ''}</div>
+    <p class="muted small">Temporada: <b>${esc(j.temporadaNombre || '—')}</b> · pistas: mín ${j.minPistas || 4} / máx ${j.maxPistas || 8}</p>
     <div class="row">
       <button class="btn sm ${j.estado === 'abierta' ? '' : 'sec'}" data-act="setEstado" data-e="abierta">Inscripciones</button>
-      <button class="btn sm ${j.estado === 'en_juego' ? '' : 'sec'}" data-act="setEstado" data-e="en_juego">En juego</button>
+      ${cuentaParaRanking(j) ? `<button class="btn sm ${j.estado === 'en_juego' ? '' : 'sec'}" data-act="setEstado" data-e="en_juego">En juego</button>` : ''}
       <button class="btn sm ${j.estado === 'cerrada' ? '' : 'sec'}" data-act="setEstado" data-e="cerrada">Cerrada</button>
     </div>
-    <p class="muted small" style="margin-top:6px">Inscripciones: se pueden apuntar · En juego: pueden enviar el resultado · Cerrada: ya no se puede enviar nada.</p>
-    <div class="row" style="margin-top:8px"><button class="btn sm peach" data-act="toggleUltima">${j.ultima ? 'Quitar 🏁 última' : 'Marcar 🏁 última'}</button><button class="btn sm rose" data-act="borrarJornada">Borrar americana</button></div>`;
+    <p class="muted small" style="margin-top:6px">${cuentaParaRanking(j) ? 'Inscripciones: se apuntan · En juego: envían el resultado · Cerrada: ya no se puede enviar nada.' : 'Al cerrarla, pasa lista en ✅ Resultados para guardar la asistencia.'}</p>
+    <div class="row" style="margin-top:8px">
+      <div><label>Mín. pistas</label><input type="number" min="1" max="20" value="${j.minPistas || 4}" data-act-change="jMin"></div>
+      <div><label>Máx. pistas</label><input type="number" min="1" max="20" value="${j.maxPistas || 8}" data-act-change="jMax"></div>
+    </div>
+    <div class="row" style="margin-top:8px">${c.tipoRanking === 'puntos' && !j.amistosa ? `<button class="btn sm peach" data-act="toggleUltima">${j.ultima ? 'Quitar 🏁 última' : 'Marcar 🏁 última'}</button>` : ''}<button class="btn sm rose" data-act="borrarJornada">Borrar americana</button></div>`;
 
-  const ins = S.inscritos[j.id] || [];
-  $('adm-nins').textContent = ins.length;
-  $('adm-inscritos').innerHTML = ins.length ? ins.map((i, k) => `<div class="list-item"><div><span class="name">${k + 1}. ${esc(nom(i.id))}</span> <span class="lvl">${nivel(i.id).toFixed(1)}</span>
-      ${i.parejaId ? `<div><span class="chip blue">pareja: ${esc(nom(i.parejaId))}</span>${(ins.some(x => x.id === i.parejaId)) ? '' : ' <span class="chip rose">no apuntada</span>'}</div>` : ''}
+  const P = plazasDe(j);
+  let h = `<div class="counter"><span class="big">${P.total}</span> apuntados → <b>${P.pistas} pista${P.pistas === 1 ? '' : 's'}</b>${P.sobran ? ` + ${P.sobran} suelto${P.sobran > 1 ? 's' : ''}` : ''}${P.espera.length ? ` · ${P.espera.length} en espera` : ''}
+    <div class="small" style="margin-top:4px">${P.faltanMin ? `⚠️ Faltan <b>${P.faltanMin}</b> para el mínimo (${j.minPistas || 4} pistas)` : P.lleno ? '✅ Completo (máximo alcanzado)' : `🎾 Faltan <b>${P.faltanOtra}</b> para abrir la ${P.pistas + 1}ª pista`}</div></div>`;
+  // Sustitución en curso
+  if (S.sust && S.sust.jid === j.id){
+    const ins = activos(j.id);
+    const candidatos = [...P.reservas, ...P.espera].filter(i => i.id !== S.sust.pid);
+    const otros = jugadoresActivos().filter(p => !ins.some(i => i.id === p.id) && p.id !== S.sust.pid && puedeCirc(p, j.circuitoId));
+    h += `<div class="box"><b>🔄 Sustituir a ${esc(nom(S.sust.pid))}</b>
+      <label>¿Quién entra en su lugar?</label>
+      <select id="sust-nuevo"><option value="">— Elige —</option>${candidatos.length ? `<optgroup label="Ya apuntados (sobran / en espera)">${candidatos.map(i => `<option value="${i.id}">${esc(nom(i.id))}</option>`).join('')}</optgroup>` : ''}<optgroup label="Otros jugadores">${otros.map(p => `<option value="${p.id}">${esc(p.nombre)} (${nivel(p.id).toFixed(1)})</option>`).join('')}</optgroup></select>
+      <p class="muted small" style="margin-top:6px">Ocupará su mismo hueco en la pista si ya estaban generadas.</p>
+      <div class="row"><button class="btn mint" data-act="confirmarSust">✓ Sustituir</button><button class="btn sec" data-act="cancelarSust">Cancelar</button></div></div>`;
+  }
+  const bajasJ = S.bajas.filter(b => b.jornadaId === j.id);
+  const fila = (i, k, tag) => `<div class="list-item"><div style="min-width:0"><span class="name">${k}. ${esc(nom(i.id))}</span> <span class="lvl">${nivel(i.id).toFixed(1)}</span> ${tag || ''}
+      ${i.parejaId ? `<div><span class="chip blue">pareja: ${esc(nom(i.parejaId))}</span>${activos(j.id).some(x => x.id === i.parejaId) ? '' : ' <span class="chip rose">no apuntada</span>'}</div>` : ''}
       ${i.por === 'admin' ? '<div class="muted small">apuntado por ti</div>' : ''}</div>
-      <button class="btn sm rose" data-act="quitarIns" data-p="${i.id}">Quitar</button></div>`).join('') : '<p class="empty">Nadie apuntado todavía.</p>';
-  const libres = jugadoresActivos().filter(p => !ins.some(i => i.id === p.id)).map(p => ({ v: p.id, t: `${p.nombre} (${nivel(p.id).toFixed(1)})` }));
+      <div class="row" style="flex:none;gap:4px"><button class="btn sm sec" data-act="sustituir" data-p="${i.id}">🔄</button><button class="btn sm rose" data-act="quitarIns" data-p="${i.id}">Quitar</button></div></div>`;
+  h += P.dentro.length ? P.dentro.map((i, k) => fila(i, k + 1, P.reservas.some(x => x.id === i.id) ? '<span class="chip peach">sobra</span>' : '')).join('') : '<p class="empty">Nadie apuntado todavía.</p>';
+  if (P.espera.length) h += `<h3>⏳ Lista de espera</h3>` + P.espera.map((i, k) => fila(i, 'E' + (k + 1))).join('');
+  if (bajasJ.length) h += `<h3>❌ Se han dado de baja</h3>` + bajasJ.map(b => `<div class="list-item"><div><span class="name">${esc(nom(b.playerId))}</span> ${b.tardia ? '<span class="tardia">⏰ última hora</span>' : ''}<div class="muted small">${hace(b.ts)}${b.visto ? ' · resuelta' : ''}</div></div>${!b.visto ? `<button class="btn sm rose" data-act="buscarSust" data-j="${j.id}" data-p="${b.playerId}" data-b="${b.id}">🔄 Sustituir</button>` : ''}</div>`).join('');
+  $('adm-inscritos').innerHTML = h;
+
+  const ins = activos(j.id);
+  const libres = jugadoresActivos().filter(p => !ins.some(i => i.id === p.id) && puedeCirc(p, j.circuitoId)).map(p => ({ v: p.id, t: `${p.nombre} (${nivel(p.id).toFixed(1)})` }));
   fillSelect($('ai-jug'), libres, '— Elige jugador —');
-  fillSelect($('ai-par'), jugadoresActivos().map(p => ({ v: p.id, t: p.nombre })), 'Sin pareja fija');
+  fillSelect($('ai-par'), jugadoresActivos().filter(p => puedeCirc(p, j.circuitoId)).map(p => ({ v: p.id, t: p.nombre })), 'Sin pareja fija');
 
   // Pistas
-  let h = '';
-  const n = ins.length;
+  const ids = new Set(ins.map(i => i.id));
+  let pz = '';
   if (S.draft && S.draft.jid === j.id){
-    h += `<div class="alert">✏️ Toca un jugador y luego otro para intercambiarlos (también con reservas).</div><div style="margin-top:10px">`;
-    h += S.draft.pistas.map((p, k) => courtHTML(p, k, true, null)).join('') + '</div>';
-    if (S.draft.reservas.length) h += `<h3>Reservas / sin pista</h3>` + S.draft.reservas.map((pid, i) => `<button class="slot${S.sel === 'r' + i ? ' sel' : ''}" data-act="slot" data-p="r${i}">${esc(nom(pid))}<span class="lvl">${nivel(pid).toFixed(1)}</span></button>`).join('');
-    h += `<div class="row"><button class="btn mint" data-act="guardarPistas">💾 Guardar pistas</button><button class="btn sec" data-act="descartarDraft">Descartar</button></div>`;
+    pz += `<div class="alert">✏️ Toca un jugador y luego otro para intercambiarlos (también con reservas).</div><div style="margin-top:10px">`;
+    pz += S.draft.pistas.map((p, k) => courtHTML(p, k, true, null, null)).join('') + '</div>';
+    if (S.draft.reservas.length) pz += `<h3>Reservas / sin pista</h3>` + S.draft.reservas.map((pid, i) => `<button class="slot${S.sel === 'r' + i ? ' sel' : ''}" data-act="slot" data-p="r${i}">${esc(nom(pid))}<span class="lvl">${nivel(pid).toFixed(1)}</span></button>`).join('');
+    pz += `<div class="row"><button class="btn mint" data-act="guardarPistas">💾 Guardar pistas</button><button class="btn sec" data-act="descartarDraft">Descartar</button></div>`;
   } else {
-    if (j.pistas?.length) h += j.pistas.map((p, k) => courtHTML(p, k, false, null)).join('') + (j.reservas?.length ? `<p class="muted small">Reservas: ${j.reservas.map(nom).map(esc).join(', ')}</p>` : '');
-    else h += `<p class="muted">${n} apuntados → ${Math.floor(n / 4)} pista(s)${n % 4 ? `, sobran ${n % 4}` : ''}.</p>`;
-    h += `<button class="btn" data-act="generar" ${n < 4 ? 'disabled' : ''}>🎾 ${j.pistas?.length ? 'Volver a generar propuesta' : 'Generar propuesta por nivel'}</button>`;
-    if (j.pistas?.length) h += `<button class="btn sec" data-act="editarPistas">✏️ Editar pistas a mano</button>`;
+    if (j.pistas?.length) pz += j.pistas.map((p, k) => courtHTML(p, k, false, null, ids)).join('') + (j.reservas?.length ? `<p class="muted small">Reservas: ${j.reservas.map(nom).map(esc).join(', ')}</p>` : '');
+    else pz += `<p class="muted">Juegan los ${P.juegan.length} primeros en apuntarse (${P.pistas} pistas).${P.reservas.length + P.espera.length ? ` Los ${P.reservas.length + P.espera.length} últimos quedan de reserva.` : ''}</p>`;
+    pz += `<button class="btn" data-act="generar" ${P.juegan.length < 4 ? 'disabled' : ''}>🎾 ${j.pistas?.length ? 'Volver a generar propuesta' : 'Generar propuesta por nivel'}</button>`;
+    if (j.pistas?.length) pz += `<button class="btn sec" data-act="editarPistas">✏️ Editar pistas a mano</button>`;
   }
-  $('adm-pistas').innerHTML = h;
+  $('adm-pistas').innerHTML = pz;
 }
 
 function renderAdmResultados(j){
-  if (!j){ $('adm-res').innerHTML = '<p class="empty">No hay americana seleccionada.</p>'; fillSelect($('ar-jug'), [], '—'); return; }
+  $('adm-res-libre').classList.toggle('hidden', !j || usaLista(j));
+  if (!j){ $('adm-res').innerHTML = '<p class="empty">No hay americana seleccionada.</p>'; return; }
   const rs = resJ(j.id);
+  if (usaLista(j)){
+    // Pasar lista
+    if (!S.lista || S.lista.jid !== j.id){
+      const sel = new Set(rs.map(r => r.playerId));
+      if (!sel.size) activos(j.id).forEach(i => sel.add(i.id));
+      S.lista = { jid: j.id, sel, extra: new Set() };
+    }
+    const ids = [...new Set([...activos(j.id).map(i => i.id), ...rs.map(r => r.playerId), ...S.lista.extra])];
+    let h = `<p class="muted" style="margin:8px 0">📋 <b>Pasar lista:</b> marca quién ha venido. ${rs.length ? `<span class="chip mint">Guardada: ${rs.length} asistentes</span>` : '<span class="chip lav">Aún sin guardar</span>'}</p>`;
+    h += ids.map(pid => `<label class="checkrow"><input type="checkbox" data-act-change="lista" value="${pid}"${S.lista.sel.has(pid) ? ' checked' : ''}> <span class="name">${esc(nom(pid))}</span></label>`).join('') || '<p class="empty">No hay nadie apuntado.</p>';
+    h += `<label>¿Vino alguien sin apuntarse?</label><select id="lista-extra"><option value="">— Añadir jugador —</option>${jugadoresActivos().filter(p => !ids.includes(p.id)).map(p => `<option value="${p.id}">${esc(p.nombre)}</option>`).join('')}</select>
+      <button class="btn mint" data-act="guardarLista">💾 Guardar asistencia (${S.lista.sel.size})</button>`;
+    $('adm-res').innerHTML = h;
+    return;
+  }
   const pend = rs.filter(r => r.estado === 'pendiente'), ok = rs.filter(r => r.estado === 'aprobado');
-  const ins = S.inscritos[j.id] || [];
-  const sinRes = ins.filter(i => !rs.some(r => r.playerId === i.id));
+  const sinRes = activos(j.id).filter(i => !rs.some(r => r.playerId === i.id));
   let h = `<h3>⏳ Pendientes de validar (${pend.length})</h3>`;
   h += pend.length ? pend.map(r => `<div class="list-item"><div><div class="name">${rs.indexOf(r) + 1}º · ${esc(nom(r.playerId))}</div><div class="muted small">${RES_TXT[r.resultado]} · ${fmtHora(r.ts)}</div></div>
       <div class="row" style="flex:none"><button class="btn sm mint" data-act="aprobar" data-id="${r.id}">✓</button><button class="btn sm rose" data-act="borrarRes" data-id="${r.id}">✕</button></div></div>`).join('')
@@ -801,77 +978,99 @@ function renderAdmResultados(j){
   fillSelect($('ar-jug'), jugadoresActivos().filter(p => !rs.some(r => r.playerId === p.id)).map(p => ({ v: p.id, t: p.nombre })), '— Elige jugador —');
 }
 
+function parecidos(nombre){
+  const w = normTxt(nombre).split(' ').filter(x => x.length > 1);
+  if (!w.length) return [];
+  return jugadoresActivos().filter(p => { const pw = normTxt(p.nombre).split(' '); return pw[0] === w[0] || w.filter(x => pw.includes(x)).length >= 2; });
+}
 function renderAdmJugadores(){
   $('adm-sol').innerHTML = S.solicitudes.length ? S.solicitudes.map(s => {
     const tel = soloDig(s.telefono);
     const porTel = tel ? jugadoresActivos().find(p => telDe(p.id) === tel) : null;
     const sug = porTel ? [] : parecidos(s.nombre).filter(p => !p.uid);
     const opciones = jugadoresActivos().filter(p => !p.uid || (porTel && p.id === porTel.id));
-    const pre = porTel ? porTel.id : '';
     let aviso = '';
     if (porTel) aviso = `<div class="match">📱 Es <u>${esc(porTel.nombre)}</u>, a quien ya diste de alta (mismo teléfono).${porTel.uid ? ' Ya tenía cuenta: al aprobar, su cuenta nueva sustituye a la antigua (p. ej. si olvidó el PIN).' : ''}</div>`;
     else if (sug.length) aviso = `<div class="warn">🤔 ¿Puede ser ${sug.map(p => `<u>${esc(p.nombre)}</u>`).join(' o ')}? Si es así, elígelo abajo.</div>`;
     return `<div class="list-item" style="flex-wrap:wrap">
       <div style="flex:1 1 100%"><div class="name">${esc(s.nombre)}</div><div class="muted small">📱 ${esc(s.telefono)}</div>${aviso}</div>
-      <div style="flex:1 1 100%"><label>¿Ya lo tenías en la lista?</label><select id="sol-merge-${s.id}"><option value="">No, es nuevo</option>${opciones.map(p => `<option value="${p.id}"${p.id === pre ? ' selected' : ''}>Sí: ${esc(p.nombre)}</option>`).join('')}</select></div>
+      <div style="flex:1 1 100%"><label>¿Ya lo tenías en la lista?</label><select id="sol-merge-${s.id}"><option value="">No, es nuevo</option>${opciones.map(p => `<option value="${p.id}"${porTel && p.id === porTel.id ? ' selected' : ''}>Sí: ${esc(p.nombre)}</option>`).join('')}</select></div>
       <div class="row" style="flex:1 1 100%"><div><label>Nivel (si es nuevo)</label><input id="sol-niv-${s.id}" type="number" step="0.1" value="2.0"></div>
       <button class="btn sm mint" style="margin-top:24px" data-act="aprobarSol" data-id="${s.id}">Aprobar</button><button class="btn sm rose" style="margin-top:24px" data-act="rechazarSol" data-id="${s.id}">Rechazar</button></div></div>`;
   }).join('') : '<p class="empty">No hay solicitudes.</p>';
 
+  const tardias = {};
+  S.bajas.filter(b => b.tardia).forEach(b => tardias[b.playerId] = (tardias[b.playerId] || 0) + 1);
   const q = normTxt($('adm-buscar').value);
   const todos = Object.values(S.players).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  const marcados = S.circuitos.filter(c => c.acceso === 'marcados');
   $('adm-njug').textContent = jugadoresActivos().length;
   $('adm-jugs').innerHTML = todos.filter(p => normTxt(p.nombre).includes(q) || (q && telDe(p.id).includes(q))).map(p => {
+    const circs = marcados.filter(c => (p.circuitos || []).includes(c.id)).map(c => c.emoji || c.nombre).join(' ');
     if (S.editPid === p.id) return `<div class="list-item" style="flex-wrap:wrap;background:#fff;border:2px solid var(--primary);border-radius:12px;padding:10px">
       <div style="flex:1 1 100%"><label>Nombre</label><input id="ed-nombre" value="${esc(p.nombre)}"></div>
       <div class="row" style="flex:1 1 100%"><div><label>Teléfono</label><input id="ed-tel" type="tel" inputmode="numeric" value="${esc(S.priv[p.id]?.telefono || '')}"></div>
       <div><label>Nivel</label><input id="ed-niv" type="number" step="0.1" value="${nivel(p.id).toFixed(1)}"></div></div>
+      ${marcados.length ? `<div style="flex:1 1 100%"><label>Circuitos a los que puede apuntarse</label>${marcados.map(c => `<label class="checkrow"><input type="checkbox" class="ed-circ" value="${c.id}"${(p.circuitos || []).includes(c.id) ? ' checked' : ''}> ${esc(c.emoji || '')} ${esc(c.nombre)}</label>`).join('')}</div>` : ''}
+      ${tardias[p.id] ? `<div style="flex:1 1 100%" class="warn">⏰ ${tardias[p.id]} baja${tardias[p.id] > 1 ? 's' : ''} de última hora</div>` : ''}
       <div class="row" style="flex:1 1 100%"><button class="btn mint" data-act="guardarJug" data-p="${p.id}">💾 Guardar</button><button class="btn sec" data-act="editJug" data-p="">Cancelar</button></div>
       <div class="row" style="flex:1 1 100%"><button class="btn sm" style="margin-top:8px;background:var(--lav);color:var(--lav-strong)" data-act="verComo" data-p="${p.id}">👁️ Ver app como ${esc(p.nombre.split(' ')[0])}</button><button class="btn sm sec" style="margin-top:8px" data-act="toggleBaja" data-p="${p.id}">${p.estado === 'baja' ? 'Dar de alta otra vez' : 'Dar de baja'}</button></div></div>`;
     return `<div class="list-item"${p.estado === 'baja' ? ' style="opacity:.55"' : ''}>
-      <div style="min-width:0"><div class="name">${esc(p.nombre)} <span class="lvl">${nivel(p.id).toFixed(1)}</span></div><div class="muted small">${p.uid ? '✅ usa la app' : 'sin cuenta'} · ${S.priv[p.id]?.telefono ? '📱 ' + esc(S.priv[p.id].telefono) : '<span style="color:var(--peach-strong)">sin teléfono</span>'}${p.estado === 'baja' ? ' · de baja' : ''}</div></div>
+      <div style="min-width:0"><div class="name">${esc(p.nombre)} <span class="lvl">${nivel(p.id).toFixed(1)}</span> ${circs}</div><div class="muted small">${p.uid ? '✅ usa la app' : 'sin cuenta'} · ${S.priv[p.id]?.telefono ? '📱 ' + esc(S.priv[p.id].telefono) : '<span style="color:var(--peach-strong)">sin teléfono</span>'}${p.estado === 'baja' ? ' · de baja' : ''}${tardias[p.id] ? ` · <span style="color:var(--rose-strong);font-weight:700">⏰ ${tardias[p.id]} baja${tardias[p.id] > 1 ? 's' : ''} tardía${tardias[p.id] > 1 ? 's' : ''}</span>` : ''}</div></div>
       <button class="btn sm sec" data-act="editJug" data-p="${p.id}">✏️ Editar</button></div>`;
   }).join('') || '<p class="empty">Sin jugadores.</p>';
   $('adm-import').innerHTML = S.loaded.players && !Object.keys(S.players).length
     ? `<button class="btn peach" data-act="importar">📥 Importar mis ${LISTA_INICIAL.length} jugadores de la versión anterior</button>` : '';
 }
 
-function renderAdmTemporadas(){
-  $('adm-temps').innerHTML = tempsOrd().map(t => {
-    const nj = S.jornadas.filter(j => j.temporadaId === t.id).length;
-    const rk = calcRanking(S.resultados, S.jornadas, t.id);
-    const lp = rk.porPuntos[0], la = rk.porAsistencia[0];
-    return `<div class="list-item" style="flex-wrap:wrap"><div style="flex:1"><div class="name">${esc(t.nombre)}</div>
-      <div class="muted small">${esc(t.inicio || '')} → ${esc(t.fin || '')} · ${nj} americanas</div>
-      <div class="small">🏆 ${lp ? esc(nom(lp.pid)) + ' (' + lp.pts + ')' : '—'} · 📅 ${la ? esc(nom(la.pid)) + ' (' + la.asist + ')' : '—'}</div></div>
-      ${t.estado === 'activa' ? `<span class="chip mint">En curso</span><button class="btn rose" data-act="cerrarTemp" data-id="${t.id}">Cerrar temporada y guardar ganadores</button>`
-        : `<span class="chip">Cerrada</span><button class="btn mint" data-act="reactivarTemp" data-id="${t.id}">↩️ Reactivar temporada</button>`}
-      <button class="btn sm rose" style="margin-top:8px" data-act="borrarTemp" data-id="${t.id}">🗑️ Borrar temporada</button></div>`;
-  }).join('') || '<p class="empty">Crea tu primera temporada.</p>';
+function formCirc(c){
+  const sel = (id, opts, v) => `<select id="${id}">${Object.entries(opts).map(([k, t]) => `<option value="${k}"${k === v ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select>`;
+  return `<div class="box">
+    <div class="row"><div style="flex:0 0 5rem"><label>Emoji</label><input id="ec-emoji" value="${esc(c.emoji || '🎾')}" maxlength="4"></div><div><label>Nombre</label><input id="ec-nombre" value="${esc(c.nombre || '')}" placeholder="Ej: Mixta de los viernes"></div></div>
+    <label>Tipo de ranking</label>${sel('ec-tipo', TIPOS, c.tipoRanking || 'puntos')}
+    <label>Duración de cada temporada</label>${sel('ec-dur', DURS, c.duracion || '2m')}
+    <label>¿Quién puede apuntarse?</label>${sel('ec-acc', { todos: 'Todos los jugadores', marcados: 'Solo los que yo marque' }, c.acceso || 'todos')}
+    <div class="row"><div><label>Mín. pistas</label><input id="ec-min" type="number" min="1" max="20" value="${c.minPistas || 4}"></div><div><label>Máx. pistas</label><input id="ec-max" type="number" min="1" max="20" value="${c.maxPistas || 8}"></div></div>
+    <p class="muted small" style="margin-top:6px">Los cambios de duración se aplican a las americanas que crees a partir de ahora.</p>
+    <div class="row"><button class="btn mint" data-act="guardarCirc" data-id="${c.id || ''}">💾 Guardar</button><button class="btn sec" data-act="editCirc" data-id="">Cancelar</button></div></div>`;
+}
+function renderAdmCircuitos(){
+  let h = '';
+  S.circuitos.forEach(c => {
+    h += `<div class="card"><h2>${esc(c.emoji || '')} ${esc(c.nombre)}</h2>
+      <p class="muted small">${esc(TIPOS[c.tipoRanking] || '')} · ${esc(DURS[c.duracion] || '')} · ${c.acceso === 'marcados' ? 'solo marcados' : 'abierto a todos'} · pistas ${c.minPistas || 4}–${c.maxPistas || 8}</p>`;
+    h += S.editCirc === c.id ? formCirc(c) : `<button class="btn sm sec" style="margin-top:8px" data-act="editCirc" data-id="${c.id}">✏️ Editar circuito</button>`;
+    const ts = temporadasDe(c.id);
+    if (ts.length){
+      h += `<h3>Temporadas</h3>` + ts.map(t => {
+        const nj = S.jornadas.filter(j => j.temporadaId === t.id).length;
+        const rk = calcRanking(S.resultados, S.jornadas, t.id);
+        const lp = rk.porPuntos[0], la = rk.porAsistencia[0];
+        return `<div class="list-item" style="flex-wrap:wrap"><div style="flex:1"><div class="name">${esc(t.nombre)} ${t.fin >= hoy() ? '<span class="chip mint">En curso</span>' : '<span class="chip">Finalizada</span>'}</div>
+          <div class="muted small">${nj} americana${nj === 1 ? '' : 's'} · termina ${esc(t.fin)}</div>
+          <div class="small">${c.tipoRanking === 'puntos' ? `🏆 ${lp ? esc(nom(lp.pid)) + ' (' + lp.pts + ')' : '—'} · ` : ''}📅 ${la ? esc(nom(la.pid)) + ' (' + la.asist + ')' : '—'}</div></div>
+          <button class="btn sm rose" data-act="borrarTemp" data-id="${t.id}">🗑️</button></div>`;
+      }).join('');
+    } else h += `<p class="muted small" style="margin-top:8px">Aún no tiene americanas. La temporada se crea sola al crear la primera.</p>`;
+    h += `</div>`;
+  });
+  h += `<div class="card"><h2>➕ Nuevo circuito</h2>${S.editCirc === 'nuevo' ? formCirc({}) : '<button class="btn sec" data-act="editCirc" data-id="nuevo">Crear un circuito nuevo</button>'}</div>`;
+  $('adm-circs').innerHTML = h;
 }
 
 /* ---------- ACCIONES ---------- */
 const A = {
   nav: el => { S.view = el.dataset.v; S.sel = null; doRender(); window.scrollTo(0, 0); },
   rankMode: el => { S.rankMode = el.dataset.v; doRender(); },
+  rankCirc: el => { S.rankCirc = el.dataset.v; S.rankTemp = null; doRender(); },
+  verRanking: el => { S.rankCirc = el.dataset.c; S.rankTemp = null; S.view = 'ranking'; doRender(); window.scrollTo(0, 0); },
+  verAmericana: el => { S.ameJ = el.dataset.j; S.view = 'americana'; doRender(); window.scrollTo(0, 0); },
   admTab: el => { S.admTab = el.dataset.v; doRender(); },
   irAdm: el => { S.view = 'admin'; S.admTab = el.dataset.v; doRender(); window.scrollTo(0, 0); },
   fs(){ const n = (fsNivel() % 3) + 1; setFs(n); try { localStorage.setItem('fs', n); } catch (e){} },
   editJug: el => { S.editPid = el.dataset.p || null; doRender(); },
   verComo: el => { S.asPid = el.dataset.p || null; S.view = S.asPid ? 'inicio' : 'perfil'; doRender(); window.scrollTo(0, 0); if (S.asPid) toast('Viendo la app como ' + nom(S.asPid)); },
   verComoSel(){ const v = $('ver-como').value; if (!v) return toast('Elige un jugador'); A.verComo({ dataset: { p: v } }); },
-  async guardarJug(el){
-    const pid = el.dataset.p, nombre = $('ed-nombre').value.trim(), tel = soloDig($('ed-tel').value), niv = parseFloat($('ed-niv').value);
-    if (nombre.length < 2) return toast('Escribe el nombre');
-    const dup = tel && Object.keys(S.players).find(id => id !== pid && telDe(id) === tel);
-    if (dup) return toast(`Ese teléfono ya lo tiene ${nom(dup)}`, 3500);
-    try {
-      const b = writeBatch(db);
-      b.update(doc(db, 'players', pid), { nombre });
-      b.set(doc(db, 'privado', pid), { telefono: tel, nivel: isNaN(niv) ? nivel(pid) : niv }, { merge: true });
-      await b.commit(); S.editPid = null; toast('Jugador guardado ✅');
-    } catch (e){ toast(errMsg(e)); }
-  },
 
   async login(){
     const tel = soloDig($('li-tel').value), pin = $('li-pin').value.trim();
@@ -888,7 +1087,7 @@ const A = {
     try {
       const cred = await createUserWithEmailAndPassword(auth, `${tel}@${EMAIL_DOMINIO}`, pinPass(pin));
       await setDoc(doc(db, 'solicitudes', cred.user.uid), { nombre, telefono: tel, ts: serverTimestamp() });
-      if (NOTIFY_URL) fetch(NOTIFY_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ tipo: 'alta', nombre, telefono: tel }) }).catch(() => {});
+      notificar({ tipo: 'alta', nombre, telefono: tel });
       ['rg-nombre', 'rg-tel', 'rg-pin', 'rg-pin2'].forEach(id => $(id).value = '');
       toast('Solicitud enviada. Luz la revisará pronto 🙌', 4000);
     } catch (e){ toast(errMsg(e)); }
@@ -901,13 +1100,24 @@ const A = {
 
   async apuntarme(el){
     const m = me(); if (!m) return;
-    const par = $('ins-pareja')?.value || null;
-    try { await setDoc(doc(db, 'jornadas', el.dataset.j, 'inscritos', m.id), { parejaId: par, por: 'jugador', ts: serverTimestamp() }); toast('¡Apuntado/a! 🎾'); }
+    const jid = el.dataset.j, par = $('ins-pareja-' + jid)?.value || null;
+    try { await setDoc(doc(db, 'jornadas', jid, 'inscritos', m.id), { parejaId: par, por: 'jugador', ts: serverTimestamp() }); toast('¡Apuntado/a! 🎾'); }
     catch (e){ toast(errMsg(e)); }
   },
   async desapuntarme(el){
-    const m = me(); if (!m || !confirm('¿Seguro que te desapuntas?')) return;
-    try { await deleteDoc(doc(db, 'jornadas', el.dataset.j, 'inscritos', m.id)); toast('Te has desapuntado'); } catch (e){ toast(errMsg(e)); }
+    const m = me(); if (!m) return;
+    const j = S.jornadas.find(x => x.id === el.dataset.j);
+    const tardia = horasPara(j) < 24;
+    const msg = tardia ? '⏰ Faltan MENOS DE 24 HORAS.\nSi te das de baja dejas a 3 personas sin partido y Luz tendrá que buscar sustituto.\n\n¿Seguro que no puedes ir?' : '¿Seguro que te desapuntas?';
+    if (!confirm(msg)) return;
+    try {
+      const b = writeBatch(db);
+      b.delete(doc(db, 'jornadas', j.id, 'inscritos', m.id));
+      b.set(doc(collection(db, 'bajas')), { playerId: m.id, jornadaId: j.id, tardia, ts: serverTimestamp(), visto: false });
+      await b.commit();
+      notificar({ tipo: 'baja', nombre: m.nombre, americana: jLabel(j) + ' ' + (j.hora || ''), tardia });
+      toast(tardia ? 'Baja registrada. Luz ya está avisada.' : 'Te has desapuntado', 3500);
+    } catch (e){ toast(errMsg(e)); }
   },
   async enviarRes(el){
     const m = me(); if (!m) return;
@@ -915,22 +1125,37 @@ const A = {
     if (!confirm(r === 'ganado' ? '¿Confirmas que HAS GANADO el último partido?' : '¿Confirmas que has perdido el último partido?')) return;
     const j = S.jornadas.find(x => x.id === jid);
     try {
-      await setDoc(doc(db, 'resultados', `${jid}_${m.id}`), { jornadaId: jid, temporadaId: j.temporadaId, playerId: m.id, resultado: r, estado: 'pendiente', por: 'jugador', ts: serverTimestamp() });
+      await setDoc(doc(db, 'resultados', `${jid}_${m.id}`), { jornadaId: jid, temporadaId: j.temporadaId ?? null, playerId: m.id, resultado: r, estado: 'pendiente', por: 'jugador', ts: serverTimestamp() });
       toast('¡Resultado enviado! Pendiente de validar ✅');
     } catch (e){ toast(e?.code?.includes('permission') ? 'Ya habías enviado tu resultado o la americana no está en juego.' : errMsg(e)); }
   },
 
-  /* --- admin: jornadas --- */
+  /* --- admin: americanas --- */
   async crearJornada(){
-    const t = tempActiva(); if (!t) return toast('Primero crea una temporada');
-    const fecha = $('nj-fecha').value, hora = $('nj-hora').value;
+    const cid = $('nj-circ').value; if (!cid) return toast('Elige el circuito');
+    const c = circ(cid), fecha = $('nj-fecha').value, hora = $('nj-hora').value;
     if (!fecha) return toast('Elige la fecha');
+    const amistosa = $('nj-amistosa').checked;
+    const p = periodo(c.duracion || '2m', fecha);
+    const minP = parseInt($('nj-min').value) || c.minPistas || 4, maxP = parseInt($('nj-max').value) || c.maxPistas || 8;
+    if (minP > maxP) return toast('El mínimo no puede ser mayor que el máximo');
     try {
-      const ref = await addDoc(collection(db, 'jornadas'), { fecha, hora, ultima: $('nj-ultima').checked, estado: 'abierta', temporadaId: t.id, creada: serverTimestamp() });
-      S.admJ = ref.id; $('nj-ultima').checked = false; toast('Americana creada. ¡Ya puedes mandar el enlace por WhatsApp!', 3500);
+      const ref = await addDoc(collection(db, 'jornadas'), {
+        fecha, hora, circuitoId: cid, acceso: c.acceso || 'todos', amistosa, ultima: !amistosa && $('nj-ultima').checked, estado: 'abierta',
+        temporadaId: amistosa ? null : `${cid}_${p.key}`, temporadaNombre: amistosa ? '' : p.nombre, temporadaFin: amistosa ? '' : p.fin,
+        minPistas: minP, maxPistas: maxP, creada: serverTimestamp()
+      });
+      S.admJ = ref.id; $('nj-ultima').checked = false; $('nj-amistosa').checked = false;
+      toast(`Americana creada${amistosa ? '' : ' en ' + p.nombre}. ¡Ya puedes mandar el enlace!`, 3500);
     } catch (e){ toast(errMsg(e)); }
   },
-  async setEstado(el){ try { await updateDoc(doc(db, 'jornadas', S.admJ), { estado: el.dataset.e }); } catch (e){ toast(errMsg(e)); } },
+  async setEstado(el){
+    const j = S.jornadas.find(x => x.id === S.admJ);
+    try {
+      await updateDoc(doc(db, 'jornadas', S.admJ), { estado: el.dataset.e });
+      if (el.dataset.e === 'cerrada' && usaLista(j)){ S.admTab = 'resultados'; S.lista = null; doRender(); toast('Ahora pasa lista para guardar la asistencia 📋', 3500); }
+    } catch (e){ toast(errMsg(e)); }
+  },
   async toggleUltima(){ const j = S.jornadas.find(x => x.id === S.admJ); try { await updateDoc(doc(db, 'jornadas', S.admJ), { ultima: !j.ultima }); } catch (e){ toast(errMsg(e)); } },
   async borrarJornada(){
     const jid = S.admJ; const rs = resJ(jid);
@@ -938,7 +1163,8 @@ const A = {
     try {
       const b = writeBatch(db);
       rs.forEach(r => b.delete(doc(db, 'resultados', r.id)));
-      (S.inscritos[jid] || []).forEach(i => b.delete(doc(db, 'jornadas', jid, 'inscritos', i.id)));
+      (await getDocs(collection(db, 'jornadas', jid, 'inscritos'))).forEach(d => b.delete(d.ref));
+      S.bajas.filter(x => x.jornadaId === jid).forEach(x => b.delete(doc(db, 'bajas', x.id)));
       b.delete(doc(db, 'jornadas', jid));
       await b.commit(); S.admJ = null; toast('Americana borrada');
     } catch (e){ toast(errMsg(e)); }
@@ -951,11 +1177,33 @@ const A = {
     catch (e){ toast(errMsg(e)); }
   },
   async quitarIns(el){ if (!confirm('¿Quitar a ' + nom(el.dataset.p) + '?')) return; try { await deleteDoc(doc(db, 'jornadas', S.admJ, 'inscritos', el.dataset.p)); } catch (e){ toast(errMsg(e)); } },
+  sustituir: el => { S.sust = { jid: S.admJ, pid: el.dataset.p }; doRender(); },
+  buscarSust: el => { S.view = 'admin'; S.admTab = 'jornada'; S.admJ = el.dataset.j; S.sust = { jid: el.dataset.j, pid: el.dataset.p, bid: el.dataset.b }; S.draft = null; doRender(); setTimeout(() => $('adm-inscritos')?.scrollIntoView({ behavior: 'smooth' }), 100); },
+  cancelarSust: () => { S.sust = null; doRender(); },
+  async confirmarSust(){
+    const nuevo = $('sust-nuevo').value; if (!nuevo) return toast('Elige quién entra');
+    const { jid, pid: viejo } = S.sust;
+    const j = S.jornadas.find(x => x.id === jid);
+    try {
+      const b = writeBatch(db);
+      const ins = activos(jid);
+      if (ins.some(i => i.id === viejo)) b.delete(doc(db, 'jornadas', jid, 'inscritos', viejo));
+      if (!ins.some(i => i.id === nuevo)) b.set(doc(db, 'jornadas', jid, 'inscritos', nuevo), { parejaId: null, por: 'admin', ts: serverTimestamp() });
+      if (j.pistas?.length){
+        const pistas = j.pistas.map(p => { const q = { ...p }; ['a1', 'a2', 'b1', 'b2'].forEach(k => { if (q[k] === viejo) q[k] = nuevo; }); return q; });
+        const reservas = (j.reservas || []).filter(x => x !== nuevo && x !== viejo);
+        b.update(doc(db, 'jornadas', jid), { pistas, reservas });
+      }
+      S.bajas.filter(x => x.jornadaId === jid && x.playerId === viejo && !x.visto).forEach(x => b.update(doc(db, 'bajas', x.id), { visto: true }));
+      await b.commit(); S.sust = null; toast(`${nom(nuevo)} entra por ${nom(viejo)} ✅`);
+    } catch (e){ toast(errMsg(e)); }
+  },
+  async bajaVista(el){ try { await updateDoc(doc(db, 'bajas', el.dataset.b), { visto: true }); } catch (e){ toast(errMsg(e)); } },
 
   generar(){
-    const ins = S.inscritos[S.admJ] || [];
-    const prop = generarPropuesta(ins, nivel);
-    S.draft = { jid: S.admJ, ...prop }; S.sel = null; doRender();
+    const j = S.jornadas.find(x => x.id === S.admJ), P = plazasDe(j);
+    const prop = generarPropuesta(P.juegan, nivel);
+    S.draft = { jid: j.id, pistas: prop.pistas, reservas: [...prop.reservas, ...P.reservas.map(i => i.id), ...P.espera.map(i => i.id)] }; S.sel = null; doRender();
   },
   editarPistas(){ const j = S.jornadas.find(x => x.id === S.admJ); S.draft = { jid: j.id, pistas: j.pistas.map(p => ({ ...p })), reservas: [...(j.reservas || [])] }; S.sel = null; doRender(); },
   descartarDraft(){ S.draft = null; S.sel = null; doRender(); },
@@ -972,7 +1220,7 @@ const A = {
     catch (e){ toast(errMsg(e)); }
   },
 
-  /* --- admin: resultados --- */
+  /* --- admin: resultados / asistencia --- */
   async aprobar(el){ try { await updateDoc(doc(db, 'resultados', el.dataset.id), { estado: 'aprobado' }); } catch (e){ toast(errMsg(e)); } },
   async aprobarTodos(){
     const pend = resJ(S.admJ).filter(r => r.estado === 'pendiente');
@@ -982,6 +1230,15 @@ const A = {
   async borrarRes(el){ if (!confirm('¿Borrar este resultado? El jugador podrá volver a enviarlo.')) return; try { await deleteDoc(doc(db, 'resultados', el.dataset.id)); } catch (e){ toast(errMsg(e)); } },
   async adminRes(el){ await ponerResAdmin(el.dataset.p, el.dataset.r); },
   async adminResultadoLibre(el){ const pid = $('ar-jug').value; if (!pid) return toast('Elige un jugador'); await ponerResAdmin(pid, el.dataset.r); $('ar-jug').value = ''; },
+  async guardarLista(){
+    const j = S.jornadas.find(x => x.id === S.lista.jid), rs = resJ(j.id);
+    try {
+      const b = writeBatch(db);
+      S.lista.sel.forEach(pid => { if (!rs.some(r => r.playerId === pid)) b.set(doc(db, 'resultados', `${j.id}_${pid}`), { jornadaId: j.id, temporadaId: j.temporadaId ?? null, playerId: pid, resultado: 'asistencia', estado: 'aprobado', por: 'admin', ts: serverTimestamp() }); });
+      rs.forEach(r => { if (!S.lista.sel.has(r.playerId)) b.delete(doc(db, 'resultados', r.id)); });
+      await b.commit(); toast(`Asistencia guardada: ${S.lista.sel.size} jugador(es) ✅`);
+    } catch (e){ toast(errMsg(e)); }
+  },
 
   /* --- admin: jugadores --- */
   async aprobarSol(el){
@@ -994,7 +1251,7 @@ const A = {
         b.set(doc(db, 'privado', merge), { telefono: s.telefono, nivel: S.priv[merge]?.nivel ?? niv }, { merge: true });
       } else {
         const ref = doc(collection(db, 'players'));
-        b.set(ref, { nombre: s.nombre, uid: s.id, estado: 'activo', creado: serverTimestamp() });
+        b.set(ref, { nombre: s.nombre, uid: s.id, estado: 'activo', circuitos: [], creado: serverTimestamp() });
         b.set(doc(db, 'privado', ref.id), { telefono: s.telefono, nivel: niv });
       }
       b.delete(doc(db, 'solicitudes', s.id));
@@ -1007,11 +1264,26 @@ const A = {
     const tel = soloDig($('nj-tel').value);
     const dup = tel && Object.keys(S.players).find(id => telDe(id) === tel);
     if (dup) return toast(`Ese teléfono ya lo tiene ${nom(dup)}`, 3500);
+    const circs = [...$('nj-circs').querySelectorAll('input:checked')].map(i => i.value);
     try {
       const b = writeBatch(db); const ref = doc(collection(db, 'players'));
-      b.set(ref, { nombre, uid: null, estado: 'activo', creado: serverTimestamp() });
-      b.set(doc(db, 'privado', ref.id), { telefono: soloDig($('nj-tel').value), nivel: parseFloat($('nj-nivel').value) || 2 });
-      await b.commit(); $('nj-nombre').value = ''; $('nj-tel').value = ''; toast('Jugador añadido');
+      b.set(ref, { nombre, uid: null, estado: 'activo', circuitos: circs, creado: serverTimestamp() });
+      b.set(doc(db, 'privado', ref.id), { telefono: tel, nivel: parseFloat($('nj-nivel').value) || 2 });
+      await b.commit(); $('nj-nombre').value = ''; $('nj-tel').value = ''; $('nj-circs').querySelectorAll('input').forEach(i => i.checked = false); toast('Jugador añadido ✅');
+    } catch (e){ toast(errMsg(e)); }
+  },
+  async guardarJug(el){
+    const pid = el.dataset.p, nombre = $('ed-nombre').value.trim(), tel = soloDig($('ed-tel').value), niv = parseFloat($('ed-niv').value);
+    if (nombre.length < 2) return toast('Escribe el nombre');
+    const dup = tel && Object.keys(S.players).find(id => id !== pid && telDe(id) === tel);
+    if (dup) return toast(`Ese teléfono ya lo tiene ${nom(dup)}`, 3500);
+    const circs = [...document.querySelectorAll('.ed-circ:checked')].map(i => i.value);
+    const otros = (S.players[pid].circuitos || []).filter(c => circ(c).acceso !== 'marcados');
+    try {
+      const b = writeBatch(db);
+      b.update(doc(db, 'players', pid), { nombre, circuitos: [...otros, ...circs] });
+      b.set(doc(db, 'privado', pid), { telefono: tel, nivel: isNaN(niv) ? nivel(pid) : niv }, { merge: true });
+      await b.commit(); S.editPid = null; toast('Jugador guardado ✅');
     } catch (e){ toast(errMsg(e)); }
   },
   async toggleBaja(el){ const p = S.players[el.dataset.p]; try { await updateDoc(doc(db, 'players', p.id), { estado: p.estado === 'baja' ? 'activo' : 'baja' }); } catch (e){ toast(errMsg(e)); } },
@@ -1019,51 +1291,38 @@ const A = {
     if (!confirm(`¿Importar ${LISTA_INICIAL.length} jugadores con sus niveles?`)) return;
     try {
       const b = writeBatch(db);
-      LISTA_INICIAL.forEach(j => { const ref = doc(collection(db, 'players')); b.set(ref, { nombre: j.nombre, uid: null, estado: 'activo', creado: serverTimestamp() }); b.set(doc(db, 'privado', ref.id), { telefono: '', nivel: j.nivel }); });
+      LISTA_INICIAL.forEach(j => { const ref = doc(collection(db, 'players')); b.set(ref, { nombre: j.nombre, uid: null, estado: 'activo', circuitos: [], creado: serverTimestamp() }); b.set(doc(db, 'privado', ref.id), { telefono: '', nivel: j.nivel }); });
       await b.commit(); toast('Jugadores importados ✅');
     } catch (e){ toast(errMsg(e)); }
   },
 
-  /* --- admin: temporadas --- */
-  async crearTemporada(){
-    if (tempActiva()) return toast('Cierra antes la temporada en curso');
-    const nombre = $('nt-nombre').value.trim(); if (!nombre) return toast('Ponle nombre a la temporada');
-    try { await addDoc(collection(db, 'temporadas'), { nombre, inicio: $('nt-ini').value, fin: $('nt-fin').value, estado: 'activa' }); $('nt-nombre').value = ''; toast('Temporada creada'); }
-    catch (e){ toast(errMsg(e)); }
-  },
-  async cerrarTemp(el){
-    const t = S.temporadas.find(x => x.id === el.dataset.id);
-    const pend = S.resultados.filter(r => r.temporadaId === t.id && r.estado === 'pendiente').length;
-    if (!confirm(`¿Cerrar "${t.nombre}"?${pend ? `\n⚠️ Hay ${pend} resultados sin validar que NO contarán.` : ''}`)) return;
-    const rk = calcRanking(S.resultados, S.jornadas, t.id);
+  /* --- admin: circuitos --- */
+  editCirc: el => { S.editCirc = el.dataset.id || null; doRender(); },
+  async guardarCirc(el){
+    const id = el.dataset.id;
+    const data = { nombre: $('ec-nombre').value.trim(), emoji: $('ec-emoji').value.trim() || '🎾', tipoRanking: $('ec-tipo').value, duracion: $('ec-dur').value, acceso: $('ec-acc').value, minPistas: parseInt($('ec-min').value) || 4, maxPistas: parseInt($('ec-max').value) || 8 };
+    if (data.nombre.length < 2) return toast('Ponle nombre al circuito');
+    if (data.minPistas > data.maxPistas) return toast('El mínimo no puede ser mayor que el máximo');
     try {
-      await updateDoc(doc(db, 'temporadas', t.id), { estado: 'cerrada', ganadorPuntos: rk.porPuntos[0] ? nom(rk.porPuntos[0].pid) : '', ganadorAsistencia: rk.porAsistencia[0] ? nom(rk.porAsistencia[0].pid) : '' });
-      toast('Temporada cerrada 🏆');
+      if (id) await updateDoc(doc(db, 'circuitos', id), data);
+      else await addDoc(collection(db, 'circuitos'), { ...data, orden: S.circuitos.length + 1 });
+      S.editCirc = null; toast('Circuito guardado ✅');
     } catch (e){ toast(errMsg(e)); }
   },
-  async reactivarTemp(el){
-    const t = S.temporadas.find(x => x.id === el.dataset.id);
-    const act = tempActiva();
-    if (act) return toast(`Antes cierra "${act.nombre}": solo puede haber una temporada en curso`, 4000);
-    if (!confirm(`¿Reactivar "${t.nombre}"? Volverá a estar en curso y se borrarán los ganadores guardados.`)) return;
-    try { await updateDoc(doc(db, 'temporadas', t.id), { estado: 'activa', ganadorPuntos: '', ganadorAsistencia: '' }); toast('Temporada reactivada ✅'); }
-    catch (e){ toast(errMsg(e)); }
-  },
   async borrarTemp(el){
-    const t = S.temporadas.find(x => x.id === el.dataset.id);
-    const js = S.jornadas.filter(j => j.temporadaId === t.id);
-    const rs = S.resultados.filter(r => r.temporadaId === t.id);
-    if (!confirm(`¿BORRAR "${t.nombre}"?\nSe eliminarán ${js.length} americanas y ${rs.length} resultados. No se puede deshacer.`)) return;
-    if (js.length + rs.length && !confirm('¿Seguro? Esto borra también todo su ranking.')) return;
+    const tid = el.dataset.id;
+    const js = S.jornadas.filter(j => j.temporadaId === tid), rs = S.resultados.filter(r => r.temporadaId === tid);
+    const nombre = js[0]?.temporadaNombre || tid;
+    if (!confirm(`¿BORRAR la temporada "${nombre}"?\nSe eliminarán ${js.length} americanas y ${rs.length} resultados. No se puede deshacer.`)) return;
+    if (!confirm('¿Seguro? Esto borra también todo su ranking.')) return;
     try {
       const b = writeBatch(db);
       for (const j of js){
-        const ins = await getDocs(collection(db, 'jornadas', j.id, 'inscritos'));
-        ins.forEach(d => b.delete(d.ref));
+        (await getDocs(collection(db, 'jornadas', j.id, 'inscritos'))).forEach(d => b.delete(d.ref));
+        S.bajas.filter(x => x.jornadaId === j.id).forEach(x => b.delete(doc(db, 'bajas', x.id)));
         b.delete(doc(db, 'jornadas', j.id));
       }
       rs.forEach(r => b.delete(doc(db, 'resultados', r.id)));
-      b.delete(doc(db, 'temporadas', t.id));
       await b.commit(); S.admJ = null; toast('Temporada borrada');
     } catch (e){ toast(errMsg(e)); }
   }
@@ -1071,13 +1330,15 @@ const A = {
 
 async function ponerResAdmin(pid, r){
   const j = S.jornadas.find(x => x.id === S.admJ); if (!j) return;
-  try { await setDoc(doc(db, 'resultados', `${j.id}_${pid}`), { jornadaId: j.id, temporadaId: j.temporadaId, playerId: pid, resultado: r, estado: 'aprobado', por: 'admin', ts: serverTimestamp() }); toast(`${nom(pid)}: ${RES_TXT[r]}`); }
+  try { await setDoc(doc(db, 'resultados', `${j.id}_${pid}`), { jornadaId: j.id, temporadaId: j.temporadaId ?? null, playerId: pid, resultado: r, estado: 'aprobado', por: 'admin', ts: serverTimestamp() }); toast(`${nom(pid)}: ${RES_TXT[r]}`); }
   catch (e){ toast(errMsg(e)); }
 }
 
 const CH = {
   async cambiarRes(el){ try { await updateDoc(doc(db, 'resultados', el.dataset.id), { resultado: el.value }); toast('Resultado cambiado'); } catch (e){ toast(errMsg(e)); } },
-  async nivel(el){ const v = parseFloat(el.value); if (isNaN(v)) return; try { await setDoc(doc(db, 'privado', el.dataset.p), { nivel: v }, { merge: true }); toast('Nivel guardado'); } catch (e){ toast(errMsg(e)); } }
+  async jMin(el){ const v = parseInt(el.value); if (!v) return; try { await updateDoc(doc(db, 'jornadas', S.admJ), { minPistas: v }); toast('Mínimo guardado'); } catch (e){ toast(errMsg(e)); } },
+  async jMax(el){ const v = parseInt(el.value); if (!v) return; try { await updateDoc(doc(db, 'jornadas', S.admJ), { maxPistas: v }); toast('Máximo guardado'); } catch (e){ toast(errMsg(e)); } },
+  lista(el){ if (el.checked) S.lista.sel.add(el.value); else S.lista.sel.delete(el.value); doRender(); }
 };
 
 document.addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (el && A[el.dataset.act]){ e.preventDefault(); A[el.dataset.act](el); } });
@@ -1085,14 +1346,16 @@ document.addEventListener('change', e => {
   const el = e.target;
   if (el.dataset.actChange && CH[el.dataset.actChange]) return CH[el.dataset.actChange](el);
   if (el.id === 'rank-temp'){ S.rankTemp = el.value; doRender(); }
-  if (el.id === 'adm-jsel' || el.id === 'adm-rsel'){ S.admJ = el.value; S.draft = null; S.sel = null; doRender(); }
+  if (el.id === 'ame-sel'){ S.ameJ = el.value; doRender(); }
+  if (el.id === 'adm-jsel' || el.id === 'adm-rsel'){ S.admJ = el.value; S.draft = null; S.sel = null; S.sust = null; S.lista = null; doRender(); }
+  if (el.id === 'lista-extra' && el.value){ S.lista.extra.add(el.value); S.lista.sel.add(el.value); doRender(); }
+  if (el.id === 'nj-circ'){ const c = circ(el.value); $('nj-min').value = c.minPistas || 4; $('nj-max').value = c.maxPistas || 8; }
 });
 $('adm-buscar').addEventListener('input', () => renderAdmJugadores());
-$('nj-fecha').value = new Date().toISOString().slice(0, 10);
+$('nj-fecha').value = hoy();
 function fsNivel(){ return document.documentElement.classList.contains('fs3') ? 3 : document.documentElement.classList.contains('fs2') ? 2 : 1; }
 function setFs(n){ const h = document.documentElement; h.classList.remove('fs2', 'fs3'); if (n > 1) h.classList.add('fs' + n); $('btn-fs').textContent = n === 3 ? 'A–' : 'A+'; }
 try { setFs(parseInt(localStorage.getItem('fs')) || 1); } catch (e){}
-// El acceso de administradora solo aparece con la dirección secreta: .../?admin
 if (new URLSearchParams(location.search).has('admin')){ $('f-admin').classList.remove('hidden'); S.view = 'perfil'; }
 
 const LISTA_INICIAL = [
