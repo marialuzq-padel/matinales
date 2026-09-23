@@ -373,7 +373,7 @@ if (typeof module !== 'undefined') module.exports = { PTS, tsMs, calcRanking, ge
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, getDoc, serverTimestamp, writeBatch }
+import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, serverTimestamp, writeBatch }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ---------- CONFIGURACIÓN ---------- */
@@ -780,7 +780,9 @@ function renderAdmTemporadas(){
     return `<div class="list-item" style="flex-wrap:wrap"><div style="flex:1"><div class="name">${esc(t.nombre)}</div>
       <div class="muted small">${esc(t.inicio || '')} → ${esc(t.fin || '')} · ${nj} americanas</div>
       <div class="small">🏆 ${lp ? esc(nom(lp.pid)) + ' (' + lp.pts + ')' : '—'} · 📅 ${la ? esc(nom(la.pid)) + ' (' + la.asist + ')' : '—'}</div></div>
-      ${t.estado === 'activa' ? `<span class="chip mint">En curso</span><button class="btn rose" data-act="cerrarTemp" data-id="${t.id}">Cerrar temporada y guardar ganadores</button>` : '<span class="chip">Cerrada</span>'}</div>`;
+      ${t.estado === 'activa' ? `<span class="chip mint">En curso</span><button class="btn rose" data-act="cerrarTemp" data-id="${t.id}">Cerrar temporada y guardar ganadores</button>`
+        : `<span class="chip">Cerrada</span><button class="btn mint" data-act="reactivarTemp" data-id="${t.id}">↩️ Reactivar temporada</button>`}
+      <button class="btn sm rose" style="margin-top:8px" data-act="borrarTemp" data-id="${t.id}">🗑️ Borrar temporada</button></div>`;
   }).join('') || '<p class="empty">Crea tu primera temporada.</p>';
 }
 
@@ -952,6 +954,32 @@ const A = {
     try {
       await updateDoc(doc(db, 'temporadas', t.id), { estado: 'cerrada', ganadorPuntos: rk.porPuntos[0] ? nom(rk.porPuntos[0].pid) : '', ganadorAsistencia: rk.porAsistencia[0] ? nom(rk.porAsistencia[0].pid) : '' });
       toast('Temporada cerrada 🏆');
+    } catch (e){ toast(errMsg(e)); }
+  },
+  async reactivarTemp(el){
+    const t = S.temporadas.find(x => x.id === el.dataset.id);
+    const act = tempActiva();
+    if (act) return toast(`Antes cierra "${act.nombre}": solo puede haber una temporada en curso`, 4000);
+    if (!confirm(`¿Reactivar "${t.nombre}"? Volverá a estar en curso y se borrarán los ganadores guardados.`)) return;
+    try { await updateDoc(doc(db, 'temporadas', t.id), { estado: 'activa', ganadorPuntos: '', ganadorAsistencia: '' }); toast('Temporada reactivada ✅'); }
+    catch (e){ toast(errMsg(e)); }
+  },
+  async borrarTemp(el){
+    const t = S.temporadas.find(x => x.id === el.dataset.id);
+    const js = S.jornadas.filter(j => j.temporadaId === t.id);
+    const rs = S.resultados.filter(r => r.temporadaId === t.id);
+    if (!confirm(`¿BORRAR "${t.nombre}"?\nSe eliminarán ${js.length} americanas y ${rs.length} resultados. No se puede deshacer.`)) return;
+    if (js.length + rs.length && !confirm('¿Seguro? Esto borra también todo su ranking.')) return;
+    try {
+      const b = writeBatch(db);
+      for (const j of js){
+        const ins = await getDocs(collection(db, 'jornadas', j.id, 'inscritos'));
+        ins.forEach(d => b.delete(d.ref));
+        b.delete(doc(db, 'jornadas', j.id));
+      }
+      rs.forEach(r => b.delete(doc(db, 'resultados', r.id)));
+      b.delete(doc(db, 'temporadas', t.id));
+      await b.commit(); S.admJ = null; toast('Temporada borrada');
     } catch (e){ toast(errMsg(e)); }
   }
 };
