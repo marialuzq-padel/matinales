@@ -7,7 +7,7 @@
 <title>Matinales de Pádel</title>
 <style>
 :root{
-  --bg:#f5f6fa; --card:#ffffff; --text:#27324a; --muted:#7a8398; --line:#e7eaf1;
+  --bg:#f5f6fa; --card:#ffffff; --text:#1c2436; --muted:#4f596d; --line:#dfe3ec;
   --primary:#4a6fa5; --primary-soft:#e3ecf8;
   --mint:#dcf3e8; --mint-strong:#2f8f67;
   --peach:#ffe9d9; --peach-strong:#c0622a;
@@ -16,18 +16,26 @@
   --gold:#fff4c7; --silver:#eef1f5; --bronze:#fbe7d6;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);padding-bottom:84px;font-size:15px;line-height:1.4}
-header{background:var(--primary);color:#fff;padding:14px 16px 12px;text-align:center}
+html{font-size:17px}
+html.fs2{font-size:19px}
+html.fs3{font-size:21.5px}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);padding-bottom:96px;font-size:1rem;line-height:1.45}
+header{background:var(--primary);color:#fff;padding:14px 56px 12px;text-align:center;position:relative}
+#btn-fs{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:10px;padding:6px 9px;font-weight:800;font-size:.95rem}
+.bell{background:var(--rose);color:var(--rose-strong);border:1px solid #f5c6cc;border-radius:14px;padding:12px 14px;margin-bottom:14px;font-weight:600}
+.bell .row{margin-top:8px}
+.match{background:var(--mint);color:var(--mint-strong);border-radius:10px;padding:8px 10px;font-weight:700;margin-top:6px}
+.warn{background:var(--peach);color:var(--peach-strong);border-radius:10px;padding:8px 10px;font-weight:600;margin-top:6px}
 header h1{font-size:1.25rem;font-weight:800;letter-spacing:-.3px}
-header .sub{font-size:.78rem;opacity:.85;margin-top:2px}
+header .sub{font-size:.85rem;opacity:.95;margin-top:2px}
 .container{max-width:620px;margin:0 auto;padding:14px 12px}
 .view{display:none}.view.active{display:block}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
 .card h2{font-size:1.02rem;margin-bottom:10px;color:var(--primary)}
 .card h3{font-size:.92rem;margin:12px 0 6px;color:var(--text)}
-.muted{color:var(--muted);font-size:.85rem}
-.small{font-size:.78rem}
-label{display:block;font-size:.82rem;font-weight:600;margin:8px 0 4px}
+.muted{color:var(--muted);font-size:.9rem}
+.small{font-size:.85rem}
+label{display:block;font-size:.9rem;font-weight:600;margin:8px 0 4px}
 input,select{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:1rem;background:#fff;color:var(--text);outline:none}
 input:focus,select:focus{border-color:var(--primary)}
 input[type=checkbox]{width:20px;height:20px;accent-color:var(--primary)}
@@ -38,10 +46,10 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--primary)}
 .btn.mint{background:var(--mint);color:var(--mint-strong)}
 .btn.peach{background:var(--peach);color:var(--peach-strong)}
 .btn.rose{background:var(--rose);color:var(--rose-strong)}
-.btn.sm{width:auto;padding:7px 10px;font-size:.8rem;margin-top:0}
+.btn.sm{width:auto;padding:8px 11px;font-size:.88rem;margin-top:0}
 .btn.big{padding:18px;font-size:1.05rem}
 .btn:disabled{opacity:.5}
-.chip{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.72rem;font-weight:700;background:var(--silver);color:var(--muted);white-space:nowrap}
+.chip{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.8rem;font-weight:700;background:var(--silver);color:var(--muted);white-space:nowrap}
 .chip.mint{background:var(--mint);color:var(--mint-strong)}
 .chip.peach{background:var(--peach);color:var(--peach-strong)}
 .chip.lav{background:var(--lav);color:var(--lav-strong)}
@@ -63,37 +71,38 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--primary)}
 .seg button{flex:1;border:none;background:none;padding:8px;border-radius:8px;font-weight:700;color:var(--muted);font-size:.88rem}
 .seg button.on{background:#fff;color:var(--primary);box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .court{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px;background:#fafbfd}
-.court .t{font-weight:800;font-size:.8rem;color:var(--primary);text-transform:uppercase;margin-bottom:6px;display:flex;justify-content:space-between}
+.court .t{font-weight:800;font-size:.85rem;color:var(--primary);text-transform:uppercase;margin-bottom:6px;display:flex;justify-content:space-between}
 .court .teams{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center}
 .court .vs{font-weight:900;color:var(--peach-strong);font-size:.85rem}
-.slot{display:block;width:100%;padding:8px;border-radius:8px;background:#fff;border:1.5px solid var(--line);font-size:.85rem;text-align:center;margin:3px 0;color:var(--text)}
+.slot{display:block;width:100%;padding:9px 6px;border-radius:8px;background:#fff;border:1.5px solid var(--line);font-size:.92rem;text-align:center;margin:3px 0;color:var(--text)}
 button.slot{cursor:pointer}
 .slot.sel{border-color:var(--peach-strong);background:var(--peach)}
 .slot.mine{background:var(--mint);border-color:#b7e3cd;font-weight:700}
-.lvl{font-size:.7rem;color:var(--muted);margin-left:3px}
+.lvl{font-size:.8rem;color:var(--muted);margin-left:3px}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .stat{background:var(--silver);border-radius:10px;padding:10px 6px;text-align:center}
 .stat .v{font-size:1.3rem;font-weight:800;color:var(--primary)}
-.stat .l{font-size:.7rem;color:var(--muted)}
+.stat .l{font-size:.8rem;color:var(--muted)}
 nav.bottom{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:10}
-nav.bottom button{flex:1;border:none;background:none;padding:9px 2px 8px;font-size:.68rem;color:var(--muted);font-weight:600;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav.bottom button{flex:1;border:none;background:none;padding:9px 2px 8px;font-size:.78rem;color:var(--muted);font-weight:600;display:flex;flex-direction:column;align-items:center;gap:2px}
 nav.bottom button .i{font-size:1.25rem}
 nav.bottom button.on{color:var(--primary)}
 .subtabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px}
-.subtabs button{border:1px solid var(--line);background:#fff;border-radius:20px;padding:7px 12px;font-weight:700;font-size:.82rem;color:var(--muted);white-space:nowrap}
+.subtabs button{border:1px solid var(--line);background:#fff;border-radius:20px;padding:7px 12px;font-weight:700;font-size:.9rem;color:var(--muted);white-space:nowrap}
 .subtabs button.on{background:var(--primary);color:#fff;border-color:var(--primary)}
 #toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:#27324a;color:#fff;padding:10px 16px;border-radius:10px;font-size:.9rem;display:none;z-index:50;max-width:90%;text-align:center}
 .hidden{display:none!important}
 .center{text-align:center}
 .empty{text-align:center;color:var(--muted);padding:14px;font-size:.9rem}
 .alert{background:var(--lav);color:var(--lav-strong);border-radius:10px;padding:10px 12px;font-size:.86rem;margin-top:8px}
-.num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);font-weight:800;font-size:.75rem;flex:none}
-.inline-lvl{width:70px;padding:6px;text-align:center;font-weight:700}
+.num{display:inline-flex;align-items:center;justify-content:center;width:1.6rem;height:1.6rem;border-radius:50%;background:var(--primary-soft);color:var(--primary);font-weight:800;font-size:.75rem;flex:none}
+.inline-lvl{width:4.2rem;padding:6px;text-align:center;font-weight:700}
 </style>
 </head>
 <body>
 <header>
   <h1>🎾 Matinales de Pádel</h1>
+  <button id="btn-fs" data-act="fs" aria-label="Tamaño de letra">A+</button>
   <div class="sub" id="hdr-sub">Americanas · Ranking en vivo</div>
 </header>
 
@@ -101,6 +110,7 @@ nav.bottom button.on{color:var(--primary)}
 
   <!-- ============ INICIO ============ -->
   <section class="view active live" id="v-inicio">
+    <div id="ini-bell"></div>
     <div id="ini-banner"></div>
     <div id="ini-jornada"></div>
     <div id="ini-resultado"></div>
@@ -148,7 +158,7 @@ nav.bottom button.on{color:var(--primary)}
         <button class="btn mint" data-act="registro">Solicitar alta</button>
         <p class="muted small" style="margin-top:8px">Luz revisará tu alta antes de que puedas apuntarte.</p>
       </div>
-      <div class="card" id="f-admin">
+      <div class="card hidden" id="f-admin">
         <h2>Acceso administradora</h2>
         <label>Email</label><input id="ad-email" type="email" autocomplete="username">
         <label>Contraseña</label><input id="ad-pass" type="password" autocomplete="current-password">
@@ -385,7 +395,8 @@ const firebaseConfig = {
   messagingSenderId: "227155783201",
   appId: "1:227155783201:web:3794c516d8ec15a7a9bd60"
 };
-const ADMIN_EMAIL = "marialuzq@gmail.com";            // ← debe coincidir con las reglas
+const ADMIN_EMAILS = ["marialuzq@gmail.com", "charoj@gmail.com"];  // ← deben coincidir con las reglas
+const NOTIFY_URL = "";   // ← URL del Apps Script para avisar por email de nuevas altas (vacío = sin aviso)
 const EMAIL_DOMINIO = "jugador.matinales-padel.app";  // email interno de cada jugador
 const pinPass = pin => `mp-${pin}-padel`;             // Firebase exige 6+ caracteres
 
@@ -399,7 +410,7 @@ const S = {
   players: {}, priv: {}, solicitudes: [], miSolicitud: undefined,
   temporadas: [], jornadas: [], resultados: [], inscritos: {},
   view: 'inicio', admTab: 'jornada', rankMode: 'puntos', rankTemp: null,
-  admJ: null, draft: null, sel: null, loaded: { players: false, jornadas: false, resultados: false }
+  admJ: null, draft: null, sel: null, editPid: null, loaded: { players: false, jornadas: false, resultados: false }
 };
 const insUnsub = {};
 let adminUnsubs = [], solUnsub = null;
@@ -409,6 +420,16 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const nom = pid => S.players[pid]?.nombre || '—';
 const nivel = pid => { const n = parseFloat(S.priv[pid]?.nivel); return isNaN(n) ? 2 : n; };
+const normTxt = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+const telDe = pid => soloDig(S.priv[pid]?.telefono);
+function parecidos(nombre){
+  const w = normTxt(nombre).split(' ').filter(x => x.length > 1);
+  if (!w.length) return [];
+  return jugadoresActivos().filter(p => {
+    const pw = normTxt(p.nombre).split(' ');
+    return pw[0] === w[0] || w.filter(x => pw.includes(x)).length >= 2;
+  });
+}
 const soloDig = s => String(s || '').replace(/\D/g, '').replace(/^34(?=\d{9}$)/, '');
 function toast(msg, ms = 2600){ const t = $('toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', ms); }
 function fmtFecha(j, largo = true){
@@ -473,7 +494,7 @@ function subInscritos(jid){
 
 onAuthStateChanged(auth, u => {
   S.user = u;
-  S.isAdmin = !!u && (u.email || '').toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  S.isAdmin = !!u && ADMIN_EMAILS.includes((u.email || '').toLowerCase());
   adminUnsubs.forEach(f => f()); adminUnsubs = [];
   if (solUnsub){ solUnsub(); solUnsub = null; }
   S.priv = {}; S.solicitudes = []; S.miSolicitud = undefined;
@@ -525,6 +546,15 @@ function renderInicio(){
     b += `</div>`;
   }
   $('ini-banner').innerHTML = b;
+
+  // Aviso para administradoras
+  let bell = '';
+  if (S.isAdmin){
+    const nSol = S.solicitudes.length, nRes = S.resultados.filter(r => r.estado === 'pendiente').length;
+    if (nSol || nRes) bell = `<div class="bell">🔔 Tienes ${[nSol ? `<b>${nSol}</b> solicitud${nSol > 1 ? 'es' : ''} de alta` : '', nRes ? `<b>${nRes}</b> resultado${nRes > 1 ? 's' : ''} por validar` : ''].filter(Boolean).join(' y ')}
+      <div class="row">${nSol ? '<button class="btn sm" style="background:#fff;color:var(--rose-strong);border:1px solid #f5c6cc" data-act="irAdm" data-v="jugadores">Ver altas</button>' : ''}${nRes ? '<button class="btn sm" style="background:#fff;color:var(--rose-strong);border:1px solid #f5c6cc" data-act="irAdm" data-v="resultados">Ver resultados</button>' : ''}</div></div>`;
+  }
+  $('ini-bell').innerHTML = bell;
 
   // Jornada
   let h = '';
@@ -754,20 +784,36 @@ function renderAdmResultados(j){
 }
 
 function renderAdmJugadores(){
-  const sinCuenta = jugadoresActivos().filter(p => !p.uid);
-  $('adm-sol').innerHTML = S.solicitudes.length ? S.solicitudes.map(s => `<div class="list-item" style="flex-wrap:wrap">
-      <div style="flex:1 1 100%"><div class="name">${esc(s.nombre)}</div><div class="muted small">📱 ${esc(s.telefono)}</div></div>
-      <div style="flex:1 1 100%"><label>¿Ya lo tenías en la lista?</label><select id="sol-merge-${s.id}"><option value="">No, es nuevo</option>${sinCuenta.map(p => `<option value="${p.id}">Sí: ${esc(p.nombre)}</option>`).join('')}</select></div>
-      <div class="row" style="flex:1 1 100%"><div><label>Nivel</label><input id="sol-niv-${s.id}" type="number" step="0.1" value="2.0"></div>
-      <button class="btn sm mint" style="margin-top:22px" data-act="aprobarSol" data-id="${s.id}">Aprobar</button><button class="btn sm rose" style="margin-top:22px" data-act="rechazarSol" data-id="${s.id}">Rechazar</button></div></div>`).join('')
-    : '<p class="empty">No hay solicitudes.</p>';
-  const q = ($('adm-buscar').value || '').toLowerCase();
+  $('adm-sol').innerHTML = S.solicitudes.length ? S.solicitudes.map(s => {
+    const tel = soloDig(s.telefono);
+    const porTel = tel ? jugadoresActivos().find(p => telDe(p.id) === tel) : null;
+    const sug = porTel ? [] : parecidos(s.nombre).filter(p => !p.uid);
+    const opciones = jugadoresActivos().filter(p => !p.uid || (porTel && p.id === porTel.id));
+    const pre = porTel ? porTel.id : '';
+    let aviso = '';
+    if (porTel) aviso = `<div class="match">📱 Es <u>${esc(porTel.nombre)}</u>, a quien ya diste de alta (mismo teléfono).${porTel.uid ? ' Ya tenía cuenta: al aprobar, su cuenta nueva sustituye a la antigua (p. ej. si olvidó el PIN).' : ''}</div>`;
+    else if (sug.length) aviso = `<div class="warn">🤔 ¿Puede ser ${sug.map(p => `<u>${esc(p.nombre)}</u>`).join(' o ')}? Si es así, elígelo abajo.</div>`;
+    return `<div class="list-item" style="flex-wrap:wrap">
+      <div style="flex:1 1 100%"><div class="name">${esc(s.nombre)}</div><div class="muted small">📱 ${esc(s.telefono)}</div>${aviso}</div>
+      <div style="flex:1 1 100%"><label>¿Ya lo tenías en la lista?</label><select id="sol-merge-${s.id}"><option value="">No, es nuevo</option>${opciones.map(p => `<option value="${p.id}"${p.id === pre ? ' selected' : ''}>Sí: ${esc(p.nombre)}</option>`).join('')}</select></div>
+      <div class="row" style="flex:1 1 100%"><div><label>Nivel (si es nuevo)</label><input id="sol-niv-${s.id}" type="number" step="0.1" value="2.0"></div>
+      <button class="btn sm mint" style="margin-top:24px" data-act="aprobarSol" data-id="${s.id}">Aprobar</button><button class="btn sm rose" style="margin-top:24px" data-act="rechazarSol" data-id="${s.id}">Rechazar</button></div></div>`;
+  }).join('') : '<p class="empty">No hay solicitudes.</p>';
+
+  const q = normTxt($('adm-buscar').value);
   const todos = Object.values(S.players).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   $('adm-njug').textContent = jugadoresActivos().length;
-  $('adm-jugs').innerHTML = todos.filter(p => p.nombre.toLowerCase().includes(q)).map(p => `<div class="list-item"${p.estado === 'baja' ? ' style="opacity:.5"' : ''}>
-      <div style="min-width:0"><div class="name">${esc(p.nombre)}</div><div class="muted small">${p.uid ? '📱 usa la app' : 'sin cuenta'}${S.priv[p.id]?.telefono ? ' · ' + esc(S.priv[p.id].telefono) : ''}${p.estado === 'baja' ? ' · de baja' : ''}</div></div>
-      <div class="row" style="flex:none;gap:4px"><input class="inline-lvl" type="number" step="0.1" value="${nivel(p.id).toFixed(1)}" data-act-change="nivel" data-p="${p.id}">
-      <button class="btn sm sec" data-act="toggleBaja" data-p="${p.id}">${p.estado === 'baja' ? 'Alta' : 'Baja'}</button></div></div>`).join('') || '<p class="empty">Sin jugadores.</p>';
+  $('adm-jugs').innerHTML = todos.filter(p => normTxt(p.nombre).includes(q) || (q && telDe(p.id).includes(q))).map(p => {
+    if (S.editPid === p.id) return `<div class="list-item" style="flex-wrap:wrap;background:#fff;border:2px solid var(--primary);border-radius:12px;padding:10px">
+      <div style="flex:1 1 100%"><label>Nombre</label><input id="ed-nombre" value="${esc(p.nombre)}"></div>
+      <div class="row" style="flex:1 1 100%"><div><label>Teléfono</label><input id="ed-tel" type="tel" inputmode="numeric" value="${esc(S.priv[p.id]?.telefono || '')}"></div>
+      <div><label>Nivel</label><input id="ed-niv" type="number" step="0.1" value="${nivel(p.id).toFixed(1)}"></div></div>
+      <div class="row" style="flex:1 1 100%"><button class="btn mint" data-act="guardarJug" data-p="${p.id}">💾 Guardar</button><button class="btn sec" data-act="editJug" data-p="">Cancelar</button></div>
+      <div class="row" style="flex:1 1 100%"><button class="btn sm sec" style="margin-top:8px" data-act="toggleBaja" data-p="${p.id}">${p.estado === 'baja' ? 'Dar de alta otra vez' : 'Dar de baja'}</button></div></div>`;
+    return `<div class="list-item"${p.estado === 'baja' ? ' style="opacity:.55"' : ''}>
+      <div style="min-width:0"><div class="name">${esc(p.nombre)} <span class="lvl">${nivel(p.id).toFixed(1)}</span></div><div class="muted small">${p.uid ? '✅ usa la app' : 'sin cuenta'} · ${S.priv[p.id]?.telefono ? '📱 ' + esc(S.priv[p.id].telefono) : '<span style="color:var(--peach-strong)">sin teléfono</span>'}${p.estado === 'baja' ? ' · de baja' : ''}</div></div>
+      <button class="btn sm sec" data-act="editJug" data-p="${p.id}">✏️ Editar</button></div>`;
+  }).join('') || '<p class="empty">Sin jugadores.</p>';
   $('adm-import').innerHTML = S.loaded.players && !Object.keys(S.players).length
     ? `<button class="btn peach" data-act="importar">📥 Importar mis ${LISTA_INICIAL.length} jugadores de la versión anterior</button>` : '';
 }
@@ -791,6 +837,21 @@ const A = {
   nav: el => { S.view = el.dataset.v; S.sel = null; doRender(); window.scrollTo(0, 0); },
   rankMode: el => { S.rankMode = el.dataset.v; doRender(); },
   admTab: el => { S.admTab = el.dataset.v; doRender(); },
+  irAdm: el => { S.view = 'admin'; S.admTab = el.dataset.v; doRender(); window.scrollTo(0, 0); },
+  fs(){ const n = (fsNivel() % 3) + 1; setFs(n); try { localStorage.setItem('fs', n); } catch (e){} },
+  editJug: el => { S.editPid = el.dataset.p || null; doRender(); },
+  async guardarJug(el){
+    const pid = el.dataset.p, nombre = $('ed-nombre').value.trim(), tel = soloDig($('ed-tel').value), niv = parseFloat($('ed-niv').value);
+    if (nombre.length < 2) return toast('Escribe el nombre');
+    const dup = tel && Object.keys(S.players).find(id => id !== pid && telDe(id) === tel);
+    if (dup) return toast(`Ese teléfono ya lo tiene ${nom(dup)}`, 3500);
+    try {
+      const b = writeBatch(db);
+      b.update(doc(db, 'players', pid), { nombre });
+      b.set(doc(db, 'privado', pid), { telefono: tel, nivel: isNaN(niv) ? nivel(pid) : niv }, { merge: true });
+      await b.commit(); S.editPid = null; toast('Jugador guardado ✅');
+    } catch (e){ toast(errMsg(e)); }
+  },
 
   async login(){
     const tel = soloDig($('li-tel').value), pin = $('li-pin').value.trim();
@@ -807,6 +868,7 @@ const A = {
     try {
       const cred = await createUserWithEmailAndPassword(auth, `${tel}@${EMAIL_DOMINIO}`, pinPass(pin));
       await setDoc(doc(db, 'solicitudes', cred.user.uid), { nombre, telefono: tel, ts: serverTimestamp() });
+      if (NOTIFY_URL) fetch(NOTIFY_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ tipo: 'alta', nombre, telefono: tel }) }).catch(() => {});
       ['rg-nombre', 'rg-tel', 'rg-pin', 'rg-pin2'].forEach(id => $(id).value = '');
       toast('Solicitud enviada. Luz la revisará pronto 🙌', 4000);
     } catch (e){ toast(errMsg(e)); }
@@ -922,6 +984,9 @@ const A = {
   async rechazarSol(el){ if (!confirm('¿Rechazar esta solicitud?')) return; try { await deleteDoc(doc(db, 'solicitudes', el.dataset.id)); } catch (e){ toast(errMsg(e)); } },
   async adminNuevoJugador(){
     const nombre = $('nj-nombre').value.trim(); if (nombre.length < 2) return toast('Escribe el nombre');
+    const tel = soloDig($('nj-tel').value);
+    const dup = tel && Object.keys(S.players).find(id => telDe(id) === tel);
+    if (dup) return toast(`Ese teléfono ya lo tiene ${nom(dup)}`, 3500);
     try {
       const b = writeBatch(db); const ref = doc(collection(db, 'players'));
       b.set(ref, { nombre, uid: null, estado: 'activo', creado: serverTimestamp() });
@@ -1004,6 +1069,11 @@ document.addEventListener('change', e => {
 });
 $('adm-buscar').addEventListener('input', () => renderAdmJugadores());
 $('nj-fecha').value = new Date().toISOString().slice(0, 10);
+function fsNivel(){ return document.documentElement.classList.contains('fs3') ? 3 : document.documentElement.classList.contains('fs2') ? 2 : 1; }
+function setFs(n){ const h = document.documentElement; h.classList.remove('fs2', 'fs3'); if (n > 1) h.classList.add('fs' + n); $('btn-fs').textContent = n === 3 ? 'A–' : 'A+'; }
+try { setFs(parseInt(localStorage.getItem('fs')) || 1); } catch (e){}
+// El acceso de administradora solo aparece con la dirección secreta: .../?admin
+if (new URLSearchParams(location.search).has('admin')){ $('f-admin').classList.remove('hidden'); S.view = 'perfil'; }
 
 const LISTA_INICIAL = [
   { nombre: "Adolf Sayol", nivel: 2.5 }, { nombre: "Aída R", nivel: 2.0 }, { nombre: "Alba Ll", nivel: 2.3 },
