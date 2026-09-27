@@ -109,6 +109,7 @@ nav.bottom button.on{color:var(--primary)}
 .circ-chip.og{background:var(--lav);color:var(--lav-strong)}
 .checkrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer}
 .checkrow input{flex:none}
+.btn.wa{background:#25d366;color:#fff}
 .box{border:2px solid var(--primary);border-radius:12px;padding:12px;margin:10px 0;background:#fff}
 .seg.wrap{flex-wrap:wrap}
 </style>
@@ -527,6 +528,39 @@ function temporadasDe(cid){
 function tempActual(cid){ const ts = temporadasDe(cid); const h = hoy(); return [...ts].reverse().find(t => t.fin >= h) || ts[0] || null; }
 const circsConRanking = () => S.circuitos.filter(c => c.tipoRanking !== 'ninguno');
 
+/* ---------- MENSAJES PARA WHATSAPP ---------- */
+const APP_URL = location.origin + location.pathname;
+function compartir(texto){ window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank'); }
+function cabecera(j){ const c = circ(j.circuitoId); return `${c.emoji || '🎾'} *${c.nombre.toUpperCase()}* · ${fmtFecha(j)}`; }
+function msgLista(j){
+  const P = plazasDe(j);
+  let t = cabecera(j) + '\n';
+  if (j.amistosa) t += '🤝 Amistosa (no cuenta para el ranking)\n';
+  if (j.ultima) t += '🏁 *¡Última americana del ranking!*\n';
+  if (!P.total) return t + '\n📣 ¡Inscripciones abiertas! Sé el primero en apuntarte 🙋\n\n👉 Apúntate aquí: ' + APP_URL + '\n(o dímelo por aquí y te apunto)';
+  t += `\n👥 *${P.total} apuntados* → ${P.pistas} pista${P.pistas === 1 ? '' : 's'}`;
+  t += P.lleno ? ' · ✅ ¡Completo!' : P.faltanMin ? ` · 🙏 faltan ${P.faltanMin} para el mínimo` : ` · 🔥 ¡faltan ${P.faltanOtra} para la ${P.pistas + 1}ª pista!`;
+  t += '\n' + P.dentro.map((i, k) => `${k + 1}. ${nom(i.id)}${i.parejaId ? ' (con ' + nom(i.parejaId) + ')' : ''}`).join('\n');
+  if (P.espera.length) t += '\n\n⏳ En espera:\n' + P.espera.map((i, k) => `${k + 1}. ${nom(i.id)}`).join('\n');
+  return t + '\n\n👉 Apúntate aquí: ' + APP_URL + '\n(o dímelo por aquí y te apunto)';
+}
+function msgPistas(j){
+  let t = cabecera(j) + '\n\n🎾 *PRIMER PARTIDO*\n';
+  t += j.pistas.map((p, k) => `*Pista ${k + 1}:* ${nom(p.a1)} y ${nom(p.a2)} 🆚 ${nom(p.b1)} y ${nom(p.b2)}`).join('\n');
+  if (j.reservas?.length) t += '\n\nReservas: ' + j.reservas.map(nom).join(', ');
+  return t + '\n\n¡Suerte a todos! 💪\n👉 ' + APP_URL;
+}
+function msgRanking(cid, tid, modo){
+  const c = circ(cid), rk = calcRanking(S.resultados, S.jornadas, tid);
+  const lista = modo === 'puntos' ? rk.porPuntos : rk.porAsistencia;
+  const tn = temporadasDe(cid).find(t => t.id === tid)?.nombre || '';
+  let t = `🏆 *RANKING ${c.nombre.toUpperCase()}${modo === 'asistencia' ? ' · ASISTENCIA' : ''}* · ${tn}\n\n`;
+  t += lista.slice(0, 10).map(s => { const pos = modo === 'puntos' ? s.pos : s.posA; return `${pos <= 3 ? ['🥇', '🥈', '🥉'][pos - 1] : pos + '.'} ${nom(s.pid)} — ${modo === 'puntos' ? s.pts + ' pts' : s.asist + ' americana' + (s.asist === 1 ? '' : 's')}`; }).join('\n');
+  const ult = jornadasOrd().find(j => j.ultima && j.estado !== 'cerrada' && j.temporadaId === tid);
+  if (ult) t += `\n\n🏁 La americana del *${fmtFecha(ult, false)}* es la ÚLTIMA de la temporada. Una victoria da 8 puntos: ¡todo puede cambiar! 🔥`;
+  return t + '\n\n👉 Ranking en vivo: ' + APP_URL;
+}
+
 /* ---------- FIREBASE: ESCUCHAS ---------- */
 const onErr = e => { console.error(e); toast(errMsg(e), 4000); };
 onSnapshot(collection(db, 'players'), s => { S.players = {}; s.forEach(d => S.players[d.id] = { id: d.id, ...d.data() }); S.loaded.players = true; render(); }, onErr);
@@ -720,7 +754,7 @@ function cardJornada(j, m){
         <button class="btn sec big" data-act="enviarRes" data-r="perdido" data-j="${j.id}">🤝 He perdido</button>`;
     }
   }
-  h += `<button class="btn sec" data-act="verAmericana" data-j="${j.id}">Ver apuntados y pistas</button></div>`;
+  h += `<div class="row"><button class="btn sec" data-act="verAmericana" data-j="${j.id}">Ver apuntados y pistas</button><button class="btn wa" data-act="waLista" data-j="${j.id}">📲 Compartir</button></div></div>`;
   return h;
 }
 
@@ -762,7 +796,7 @@ function renderRanking(){
     ? 'Asistir +5 · Último partido ganado +3 / perdido +1. Empate: gana quien envió antes su resultado.'
     : 'Americanas jugadas en la temporada. ¡Premio a quien más venga!') +
     (pend ? ` <span class="chip lav">${pend} resultado(s) pendientes de validar</span>` : '');
-  $('rank-list').innerHTML = lista.length ? lista.map(s => rankRow(s, modo, me(), S.rankTemp)).join('') : '<p class="empty">Aún no hay resultados validados.</p>';
+  $('rank-list').innerHTML = lista.length ? lista.map(s => rankRow(s, modo, me(), S.rankTemp)).join('') + `<button class="btn wa" data-act="waRanking" data-m="${modo}">📲 Compartir ranking por WhatsApp</button>` : '<p class="empty">Aún no hay resultados validados.</p>';
 }
 
 /* ----- Americana ----- */
@@ -781,7 +815,7 @@ function renderAmericana(){
   let h = `<div class="card">${circChip(j.circuitoId)}<h2 style="margin-top:6px">${esc(fmtFecha(j))}</h2>${estadoChip(j.estado)} ${j.ultima ? '<span class="chip peach">🏁 Última del ranking</span>' : ''} ${j.amistosa ? '<span class="chip">🤝 Amistosa</span>' : ''}</div>`;
   if (j.pistas?.length){
     h += `<div class="card"><h2>Primer partido</h2>${j.pistas.map((p, k) => courtHTML(p, k, false, m, ids)).join('')}
-      ${j.reservas?.length ? `<p class="muted small">Reservas: ${j.reservas.map(nom).map(esc).join(', ')}</p>` : ''}</div>`;
+      ${j.reservas?.length ? `<p class="muted small">Reservas: ${j.reservas.map(nom).map(esc).join(', ')}</p>` : ''}<button class="btn wa" data-act="waPistas" data-j="${j.id}">📲 Compartir pistas por WhatsApp</button></div>`;
   }
   const rs = resJ(j.id);
   if (rs.length && cuentaParaRanking(j)){
@@ -791,7 +825,7 @@ function renderAmericana(){
   const fila = (i, k, extra) => `<div class="list-item"><div class="row" style="justify-content:flex-start;gap:10px"><span class="num">${k}</span><span class="name">${esc(nom(i.id))}</span></div>${i.parejaId ? `<span class="chip blue">con ${esc(nom(i.parejaId))}</span>` : ''}${extra || ''}</div>`;
   h += `<div class="card"><h2>Apuntados (${P.total})</h2><div class="counter"><b>${P.pistas}</b> pista${P.pistas === 1 ? '' : 's'} completas${P.sobran ? ` · sobran ${P.sobran}` : ''}${P.espera.length ? ` · ${P.espera.length} en espera` : ''}</div>
     ${P.dentro.length ? P.dentro.map((i, k) => fila(i, k + 1, P.reservas.some(x => x.id === i.id) ? '<span class="chip peach">sobra</span>' : '')).join('') : '<p class="empty">Nadie apuntado todavía.</p>'}
-    ${P.espera.length ? `<h3>⏳ Lista de espera</h3>${P.espera.map((i, k) => fila(i, k + 1)).join('')}` : ''}</div>`;
+    ${P.espera.length ? `<h3>⏳ Lista de espera</h3>${P.espera.map((i, k) => fila(i, k + 1)).join('')}` : ''}<button class="btn wa" data-act="waLista" data-j="${j.id}">📲 Compartir lista por WhatsApp</button></div>`;
   $('ame-content').innerHTML = h;
 }
 
@@ -893,7 +927,8 @@ function renderAdmJornada(j){
       <div><label>Mín. pistas</label><input type="number" min="1" max="20" value="${j.minPistas || 4}" data-act-change="jMin"></div>
       <div><label>Máx. pistas</label><input type="number" min="1" max="20" value="${j.maxPistas || 8}" data-act-change="jMax"></div>
     </div>
-    <div class="row" style="margin-top:8px">${c.tipoRanking === 'puntos' && !j.amistosa ? `<button class="btn sm peach" data-act="toggleUltima">${j.ultima ? 'Quitar 🏁 última' : 'Marcar 🏁 última'}</button>` : ''}<button class="btn sm rose" data-act="borrarJornada">Borrar americana</button></div>`;
+    <div class="row" style="margin-top:8px">${c.tipoRanking === 'puntos' && !j.amistosa ? `<button class="btn sm peach" data-act="toggleUltima">${j.ultima ? 'Quitar 🏁 última' : 'Marcar 🏁 última'}</button>` : ''}<button class="btn sm rose" data-act="borrarJornada">Borrar americana</button></div>
+    <button class="btn wa" data-act="waLista" data-j="${j.id}">📲 Compartir lista por WhatsApp</button>`;
 
   const P = plazasDe(j);
   let h = `<div class="counter"><span class="big">${P.total}</span> apuntados → <b>${P.pistas} pista${P.pistas === 1 ? '' : 's'}</b>${P.sobran ? ` + ${P.sobran} suelto${P.sobran > 1 ? 's' : ''}` : ''}${P.espera.length ? ` · ${P.espera.length} en espera` : ''}
@@ -936,7 +971,7 @@ function renderAdmJornada(j){
     if (j.pistas?.length) pz += j.pistas.map((p, k) => courtHTML(p, k, false, null, ids)).join('') + (j.reservas?.length ? `<p class="muted small">Reservas: ${j.reservas.map(nom).map(esc).join(', ')}</p>` : '');
     else pz += `<p class="muted">Juegan los ${P.juegan.length} primeros en apuntarse (${P.pistas} pistas).${P.reservas.length + P.espera.length ? ` Los ${P.reservas.length + P.espera.length} últimos quedan de reserva.` : ''}</p>`;
     pz += `<button class="btn" data-act="generar" ${P.juegan.length < 4 ? 'disabled' : ''}>🎾 ${j.pistas?.length ? 'Volver a generar propuesta' : 'Generar propuesta por nivel'}</button>`;
-    if (j.pistas?.length) pz += `<button class="btn sec" data-act="editarPistas">✏️ Editar pistas a mano</button>`;
+    if (j.pistas?.length) pz += `<button class="btn sec" data-act="editarPistas">✏️ Editar pistas a mano</button><button class="btn wa" data-act="waPistas" data-j="${j.id}">📲 Compartir pistas por WhatsApp</button>`;
   }
   $('adm-pistas').innerHTML = pz;
 }
@@ -1064,6 +1099,9 @@ const A = {
   rankMode: el => { S.rankMode = el.dataset.v; doRender(); },
   rankCirc: el => { S.rankCirc = el.dataset.v; S.rankTemp = null; doRender(); },
   verRanking: el => { S.rankCirc = el.dataset.c; S.rankTemp = null; S.view = 'ranking'; doRender(); window.scrollTo(0, 0); },
+  waLista: el => compartir(msgLista(S.jornadas.find(x => x.id === el.dataset.j))),
+  waPistas: el => compartir(msgPistas(S.jornadas.find(x => x.id === el.dataset.j))),
+  waRanking: el => compartir(msgRanking(S.rankCirc, S.rankTemp, el.dataset.m)),
   verAmericana: el => { S.ameJ = el.dataset.j; S.view = 'americana'; doRender(); window.scrollTo(0, 0); },
   admTab: el => { S.admTab = el.dataset.v; doRender(); },
   irAdm: el => { S.view = 'admin'; S.admTab = el.dataset.v; doRender(); window.scrollTo(0, 0); },
@@ -1146,6 +1184,7 @@ const A = {
         minPistas: minP, maxPistas: maxP, creada: serverTimestamp()
       });
       S.admJ = ref.id; $('nj-ultima').checked = false; $('nj-amistosa').checked = false;
+      setTimeout(() => { const nj = S.jornadas.find(x => x.id === ref.id); if (nj && confirm('¿Quieres mandar ya la convocatoria por WhatsApp?')) compartir(msgLista(nj)); }, 800);
       toast(`Americana creada${amistosa ? '' : ' en ' + p.nombre}. ¡Ya puedes mandar el enlace!`, 3500);
     } catch (e){ toast(errMsg(e)); }
   },
@@ -1216,7 +1255,9 @@ const A = {
     const a = get(S.sel), b = get(p); set(S.sel, b); set(p, a); S.sel = null; doRender();
   },
   async guardarPistas(){
-    try { await updateDoc(doc(db, 'jornadas', S.draft.jid), { pistas: S.draft.pistas, reservas: S.draft.reservas }); S.draft = null; S.sel = null; toast('Pistas guardadas. Los jugadores ya las ven 🎾'); }
+    const jid = S.draft.jid;
+    try { await updateDoc(doc(db, 'jornadas', jid), { pistas: S.draft.pistas, reservas: S.draft.reservas }); S.draft = null; S.sel = null; toast('Pistas guardadas. Los jugadores ya las ven 🎾');
+      setTimeout(() => { const nj = S.jornadas.find(x => x.id === jid); if (nj?.pistas && confirm('¿Compartir las pistas por WhatsApp?')) compartir(msgPistas(nj)); }, 600); }
     catch (e){ toast(errMsg(e)); }
   },
 
