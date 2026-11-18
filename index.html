@@ -89,6 +89,23 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--primary)}
 .premio-row .k{background:#c2410c;color:#fff;border-radius:10px;padding:4px 8px;font-weight:900;font-size:.85rem;flex:none}
 .premio-row .w{font-weight:900;min-width:0;flex:1}
 .premio-row input{flex:1.2;padding:8px;font-size:.95rem}
+#ganaste{position:fixed;inset:0;z-index:60;background:radial-gradient(circle at 50% 35%,#ffe36e 0,#f59e0b 45%,#b45309 100%);color:#3b2500;text-align:center;overflow:hidden}
+#ganaste .in{max-width:520px;margin:0 auto;padding:30px 18px;display:flex;flex-direction:column;justify-content:center;min-height:100%}
+#ganaste .big{font-size:5rem;animation:bote 0.8s infinite alternate}
+@keyframes bote{to{transform:scale(1.15) rotate(-6deg)}}
+#ganaste h2{font-size:min(11vw,2.8rem);font-weight:900;line-height:1.05;margin-top:10px}
+#ganaste .pz{font-size:1.5rem;font-weight:900;margin-top:18px;background:rgba(255,255,255,.6);border-radius:18px;padding:16px}
+#ganaste p{font-weight:800;font-size:1.15rem;margin-top:16px}
+#ganaste button{margin-top:22px;padding:18px;border:none;border-radius:16px;background:#3b2500;color:#fff;font-weight:900;font-size:1.25rem}
+#ganaste .cf{position:absolute;font-size:2rem;animation:cae 3s linear infinite}
+@keyframes cae{from{transform:translateY(-10vh) rotate(0)}to{transform:translateY(110vh) rotate(360deg)}}
+.vivo{background:#0f172a;color:#fff;border-radius:18px;padding:16px;margin-bottom:14px;text-align:center}
+.vivo .dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:#ef4444;margin-right:6px;animation:parp 1s infinite}
+.vivo .n{font-size:2rem;font-weight:900;margin:8px 0 2px}
+.vivo .l{color:#cbd5e1;font-weight:700}
+.vivo .ls{background:#1e293b;border-radius:12px;margin-top:12px;padding:6px 12px;text-align:left}
+.vivo .ls div{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #334155;font-weight:800}
+.vivo .ls div:last-child{border-bottom:none}
 #ruleta{position:fixed;inset:0;z-index:46;background:#0b1220;color:#fff;overflow-y:auto}
 #ruleta .in{max-width:620px;margin:0 auto;padding:16px 14px 30px;text-align:center;min-height:100%;display:flex;flex-direction:column}
 #ruleta .top{display:flex;justify-content:flex-end}
@@ -338,6 +355,7 @@ details.more summary{font-weight:800;color:var(--primary);cursor:pointer}
 <div id="sheet" class="hidden"></div>
 <div id="crono" class="hidden"></div>
 <div id="ruleta" class="hidden"></div>
+<div id="ganaste" class="hidden"></div>
 <div id="toast"></div>
 
 <!-- ================= LÓGICA PURA (sin Firebase) ================= -->
@@ -482,7 +500,7 @@ const firebaseConfig = {
   messagingSenderId: "227155783201",
   appId: "1:227155783201:web:3794c516d8ec15a7a9bd60"
 };
-const VERSION = '18 nov · sorteo';   // ← cambia en cada subida para comprobar que el móvil tiene la última
+const VERSION = '18 nov · directo';   // ← cambia en cada subida para comprobar que el móvil tiene la última
 const ADMIN_EMAILS = ["marialuzq@gmail.com", "charoj@gmail.com"];  // ← deben coincidir con las reglas
 const NOTIFY_URL = "https://script.google.com/macros/s/AKfycbxk5_HE3P5C9fisqHIRppbbRP8o2Zt6HmB-KS5sK16p-qqIJW3klcqhLFB6LFxEZYg/exec";   // ← URL del Apps Script (aviso-app.gs) para avisos por email (vacío = sin email)
 const EMAIL_DOMINIO = "jugador.matinales-padel.app";
@@ -707,7 +725,7 @@ onSnapshot(collection(db, 'jornadas'), s => {
   S.jornadas = s.docs.map(d => ({ id: d.id, ...d.data() }));
   S.loaded.jornadas = true;
   S.jornadas.filter(j => j.estado !== 'cerrada').forEach(j => subInscritos(j.id));
-  migrar(); autoCerrar(); render();
+  migrar(); autoCerrar(); render(); checkGanador();
 }, onErr);
 
 function subInscritos(jid){
@@ -727,6 +745,7 @@ onAuthStateChanged(auth, u => {
   if (S.isAdmin){
     adminUnsubs.push(onSnapshot(collection(db, 'privado'), s => { S.priv = {}; s.forEach(d => S.priv[d.id] = d.data()); render(); }, onErr));
     adminUnsubs.push(onSnapshot(collection(db, 'solicitudes'), s => { S.solicitudes = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); }, onErr));
+    adminUnsubs.push(onSnapshot(collection(db, 'avisos'), s => { S.avisos = new Set(s.docs.map(d => d.id)); if (S.rul?.fase === 'gana') pintarRuleta(); render(); }, () => {}));
     adminUnsubs.push(onSnapshot(collection(db, 'bajas'), s => { S.bajas = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => tsMs(b.ts) - tsMs(a.ts)); render(); }, onErr));
   } else if (u){
     solUnsub = onSnapshot(doc(db, 'solicitudes', u.uid), d => { S.miSolicitud = d.exists() ? d.data() : null; render(); }, () => {});
@@ -793,7 +812,7 @@ function doRender(){
   $('hdr-sub').textContent = S.isAdmin && m ? '👁️ Viendo como ' + m.nombre : S.isAdmin ? '⚙️ Administradora' : m ? '👋 Hola, ' + m.nombre.split(' ')[0] : 'Americanas · Ranking en vivo';
   renderInicio(); renderRanking(); renderAmericana(); renderPerfil();
   if (S.isAdmin) renderAdmin();
-  autoHoja(); renderSheet(); renderModal();
+  autoHoja(); renderSheet(); renderModal(); checkGanador();
 }
 
 /* ----- Avisos grandes de bajas (administradoras) ----- */
@@ -835,6 +854,7 @@ function renderInicio(){
     if (nSol || nRes) bell += `<div class="bell">🔔 Tienes ${[nSol ? `<b>${nSol}</b> solicitud${nSol > 1 ? 'es' : ''} de alta` : '', nRes ? `<b>${nRes}</b> resultado${nRes > 1 ? 's' : ''} por validar` : ''].filter(Boolean).join(' y ')}
       <div class="row">${nSol ? '<button class="btn sm" style="background:#fff;color:var(--rose-strong);border:1px solid #f5c6cc" data-act="irAdm" data-v="jugadores">Ver altas</button>' : ''}${nRes ? '<button class="btn sm" style="background:#fff;color:var(--rose-strong);border:1px solid #f5c6cc" data-act="irAdm" data-v="resultados">Ver resultados</button>' : ''}</div></div>`;
   }
+  bell += sorteoVivoHTML();
   $('ini-bell').innerHTML = bell;
 
   // Banner última americana
@@ -1217,8 +1237,16 @@ function sorteoHTML(j){
       <button class="btn sm sec" style="margin-top:8px" data-act="campEditar">✏️ Cambiar</button></div>`;
   } else {
     const sel = editCamp ? S.campSel.set : new Set(j.campeones || []);
-    h += `<div class="camp"><h3>🏆 ¿Quién ha ganado la pista 1?</h3><p class="small" style="font-weight:700">Toca los 2 nombres. Quedarán fuera del sorteo.</p>
-      <div class="pick">${asis.map(pid => `<button class="${sel.has(pid) ? 'on' : ''}" data-act="campToggle" data-j="${j.id}" data-p="${pid}">${sel.has(pid) ? '🏆 ' : ''}${esc(nom(pid))}</button>`).join('')}</div>
+    const parejas = (j.pistas || []).flatMap(p => [[p.a1, p.a2], [p.b1, p.b2]]).filter(pr => pr[0] && pr[1])
+      .map(pr => pr.sort((a, b) => nom(a).localeCompare(nom(b), 'es'))).sort((a, b) => nom(a[0]).localeCompare(nom(b[0]), 'es'));
+    if (parejas.length && !S.campSueltos){
+      h += `<div class="camp"><h3>🏆 ¿Qué pareja ha ganado la pista 1?</h3><p class="small" style="font-weight:700">Toca la pareja ganadora. Quedará fuera del sorteo.</p>
+        <div style="margin-top:8px">${parejas.map(pr => { const on = sel.has(pr[0]) && sel.has(pr[1]);
+          return `<button class="jc" style="padding:13px;margin-bottom:8px;${on ? 'background:#f5c542;border-color:#d4a017' : ''}" data-act="campPareja" data-j="${j.id}" data-p="${pr[0]}" data-q="${pr[1]}"><span class="i"><span class="n" style="font-size:1.05rem">${on ? '🏆 ' : ''}${esc(nom(pr[0]))} y ${esc(nom(pr[1]))}</span></span></button>`; }).join('')}</div>
+        <button class="btn sm sec" data-act="campSueltos">Elegir nombres sueltos</button>`;
+    } else h += `<div class="camp"><h3>🏆 ¿Quién ha ganado la pista 1?</h3><p class="small" style="font-weight:700">Toca los 2 nombres. Quedarán fuera del sorteo.</p>
+      <div class="pick">${asis.map(pid => `<button class="${sel.has(pid) ? 'on' : ''}" data-act="campToggle" data-j="${j.id}" data-p="${pid}">${sel.has(pid) ? '🏆 ' : ''}${esc(nom(pid))}</button>`).join('')}</div>`;
+    h += `
       <button class="btn" style="background:#b45309" data-act="campGuardar" data-j="${j.id}" ${sel.size === 2 ? '' : 'disabled'}>Guardar campeones (${sel.size}/2)</button>
       ${j.campeones?.length ? '' : '<p class="small" style="margin-top:6px;font-weight:700">¿No hay campeones hoy? Puedes sortear igualmente.</p>'}</div>`;
   }
@@ -1231,6 +1259,12 @@ function sorteoHTML(j){
     h += `<div class="card"><h2>🎉 Ganadores</h2><p class="small muted" style="margin-bottom:4px">Escribe qué se llevó cada uno (cuando quieras).</p>` + sort.map((x, k) => `<div class="premio-row"><span class="k">${k + 1}</span><span class="w">${esc(nom(x.pid))}</span><input value="${esc(x.premio || '')}" placeholder="¿Qué ganó?" data-act-change="premio" data-j="${j.id}" data-k="${k}"></div>`).join('')
       + `<div class="row"><button class="btn wa" data-act="waSorteo" data-j="${j.id}">📲 Compartir</button><button class="btn sec" data-act="sorteoDeshacer" data-j="${j.id}">↩ Deshacer último</button></div></div>`;
   }
+  const pr = j.avisoPrueba, prKey = pr ? j.id + '_prueba-' + pr.t : '';
+  h += `<details class="more" style="background:#fff;border:1px solid var(--line)"><summary>📱 Probar el aviso "¡Te ha tocado!"</summary>
+    <p class="small muted" style="margin:6px 0">Elige a un jugador. Si tiene la app abierta en su móvil, le saltará la pantalla de premio (de prueba).</p>
+    <select id="prueba-pid"><option value="">— Elige jugador —</option>${asis.map(pid => `<option value="${pid}"${pr?.pid === pid ? ' selected' : ''}>${esc(nom(pid))}</option>`).join('')}</select>
+    <button class="btn" data-act="avisoPrueba" data-j="${j.id}">📱 Enviar aviso de prueba</button>
+    ${pr && Date.now() - pr.t < 10 * 60000 ? `<p style="margin-top:8px;font-weight:900;color:${S.avisos?.has(prKey) ? 'var(--mint-strong)' : 'var(--muted)'}">${S.avisos?.has(prKey) ? '✓ ¡Le ha saltado a ' + esc(nom(pr.pid)) + '!' : (Date.now() - pr.t < 9000 ? '📱 Avisando a ' + esc(nom(pr.pid)) + '…' : '📵 ' + esc(nom(pr.pid)) + ' no tiene la app abierta')}</p>` : ''}</details>`;
   return h;
 }
 
@@ -1602,6 +1636,48 @@ function pintarCrono(){
   el.innerHTML = st === 'running' ? `<button class="bt ok" data-act="cronoProbar">🔊 Sonido activado ✓ · Probar pitido</button>` : `<button class="bt snd" data-act="cronoSonido">🔊 TOCA AQUÍ PARA ACTIVAR EL SONIDO</button>`;
 }
 
+/* ---------- SORTEO EN DIRECTO / AVISO AL GANADOR ---------- */
+function yoPid(){ if (S.asPid) return S.asPid; const m = me(); if (m) return m.id; try { return localStorage.getItem('yoPid'); } catch (e){ return null; } }
+function sorteoVivoHTML(){
+  return jornadasOrd().filter(j => visible(j) && j.sorteo?.length && Date.now() - Math.max(...j.sorteo.map(x => x.t || 0)) < 3 * 3600000).map(j => {
+    const ult = j.sorteo[j.sorteo.length - 1];
+    return `<div class="vivo"><span class="dot"></span><b>SORTEO EN DIRECTO</b> · ${esc(circ(j.circuitoId).nombre)}
+      <div class="n">🎉 ${esc(nom(ult.pid))}</div><div class="l">Premio ${j.sorteo.length}${ult.premio ? ' · ' + esc(ult.premio) : ''}</div>
+      <div class="ls">${j.sorteo.map((x, k) => `<div><span>🎁 Premio ${k + 1}${x.premio ? ' · ' + esc(x.premio) : ''}</span><span>${esc(nom(x.pid))}</span></div>`).join('')}</div>
+      <p style="margin-top:10px;font-weight:700;color:#fde68a">¡Mantén la app abierta, el siguiente puedes ser tú! 🤞</p></div>`;
+  }).join('');
+}
+const avisados = new Set();
+function checkGanador(){
+  if (S.isAdmin && !S.asPid) return;
+  const yo = yoPid(); if (!yo) return;
+  for (const j of S.jornadas){
+    (j.sorteo || []).forEach((x, k) => { if (x.pid === yo && x.t && Date.now() - x.t < 15 * 60000) mostrarGanaste(j, String(k), x, false); });
+    const pr = j.avisoPrueba;
+    if (pr && pr.pid === yo && Date.now() - pr.t < 5 * 60000) mostrarGanaste(j, 'prueba-' + pr.t, { pid: yo, premio: pr.premio }, true);
+  }
+}
+function fanfarria(){
+  try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); audioCtx.resume().then(() => {
+    const t = audioCtx.currentTime + 0.05; const n = [523, 659, 784, 1047, 784, 1047, 1319];
+    n.forEach((f, q) => beep(f, t + q * 0.17, q === n.length - 1 ? 0.9 : 0.16, 0.45)); }); } catch (e){}
+}
+function mostrarGanaste(j, k, x, prueba){
+  const key = j.id + '_' + k;
+  if (avisados.has(key)) return;
+  try { if (localStorage.getItem('av-' + key)) { avisados.add(key); return; } localStorage.setItem('av-' + key, '1'); } catch (e){}
+  avisados.add(key);
+  const n = (j.sorteo || []).findIndex((y, q) => String(q) === k) + 1;
+  const conf = ['🎉', '🎊', '✨', '🎁', '🎾'].flatMap((e, q) => [0, 1, 2].map(r => `<span class="cf" style="left:${(q * 20 + r * 7) % 95}%;animation-delay:${(q + r) * 0.35}s">${e}</span>`)).join('');
+  $('ganaste').innerHTML = `${conf}<div class="in"><div class="big">🎁</div><h2>${prueba ? '(PRUEBA)<br>' : ''}¡TE HA TOCADO, ${esc(nom(x.pid).split(' ')[0].toUpperCase())}!</h2>
+    <div class="pz">${prueba ? 'Aviso de prueba' : 'Premio ' + (n || '')}${x.premio ? '<br>🎾 ' + esc(x.premio) : ''}</div>
+    <p>Acércate a recoger tu premio 😄</p><button data-act="cerrarGanaste">¡Genial!</button></div>`;
+  $('ganaste').classList.remove('hidden');
+  fanfarria();
+  try { navigator.vibrate?.([300, 120, 300, 120, 900]); } catch (e){}
+  setDoc(doc(db, 'avisos', key), { jid: j.id, k, pid: x.pid, ts: serverTimestamp() }).catch(() => {});
+}
+
 /* ---------- RULETA DEL SORTEO ---------- */
 function abrirRuleta(jid){ S.rul = { jid, fase: 'listo' }; $('ruleta').classList.remove('hidden'); pintarRuleta(); }
 function pintarRuleta(){
@@ -1612,6 +1688,8 @@ function pintarRuleta(){
     const w = (j.sorteo || [])[(j.sorteo || []).length - 1];
     h += `<p class="pr">🎁 PREMIO ${(j.sorteo || []).length}</p>${w?.premio ? `<p class="sub">${esc(w.premio)}</p>` : ''}
       <div class="win"><div class="e">🎉</div><div class="n">${esc(nom(R_.ganador))}</div><p style="font-weight:900;font-size:1.2rem">¡Enhorabuena!</p></div>
+      ${(() => { const key = j.id + '_' + ((j.sorteo || []).length - 1); const visto = S.avisos?.has(key);
+        return `<div style="border-radius:14px;padding:12px;font-weight:900;font-size:1.05rem;background:${visto ? '#0f6b45' : '#334155'}">${visto ? '📱 ¡Le ha saltado en su móvil! ✓' : (Date.now() - (R_.ganaT || 0) < 8500 ? '📱 Avisando a su móvil…' : '📵 No tiene la app abierta: díselo de viva voz')}</div>`; })()}
       <p class="info">${part.length} siguen en el sorteo</p>
       ${part.length ? `<button class="bt sig" data-act="rulSiguiente">🎁 SIGUIENTE PREMIO (${part.length})</button>` : '<p class="info" style="margin-top:12px">No queda nadie más en el sorteo.</p>'}
       <button class="bt ok" data-act="rulCerrar">Terminar</button>`;
@@ -1642,7 +1720,8 @@ async function girarRuleta(){
   try { navigator.vibrate?.([200, 100, 200, 100, 500]); } catch (e){}
   try {
     const pre = (j.premiosPre || [])[(j.sorteo || []).length] || '';
-    await updateDoc(doc(db, 'jornadas', j.id), { sorteo: [...(j.sorteo || []), { pid: ganador, premio: pre }] });
+    await updateDoc(doc(db, 'jornadas', j.id), { sorteo: [...(j.sorteo || []), { pid: ganador, premio: pre, t: Date.now() }] });
+    R_.ganaT = Date.now(); setTimeout(() => { if (S.rul?.fase === 'gana') pintarRuleta(); }, 9000);
     setTimeout(() => { R_.girando = false; R_.fase = 'gana'; R_.ganador = ganador; pintarRuleta(); }, 900);
   } catch (e){ R_.girando = false; toast(errMsg(e)); pintarRuleta(); }
 }
@@ -1658,9 +1737,14 @@ const A = {
   detTab: el => { S.detTab = el.dataset.v; doRender(); },
   campToggle: el => { const jid = el.dataset.j, j = S.jornadas.find(x => x.id === jid); if (!S.campSel || S.campSel.jid !== jid) S.campSel = { jid, set: new Set(j.campeones || []) };
     const st = S.campSel.set, p = el.dataset.p; if (st.has(p)) st.delete(p); else { if (st.size >= 2) st.delete([...st][0]); st.add(p); } doRender(); },
+  campPareja: el => { const jid = el.dataset.j; S.campSel = { jid, set: new Set([el.dataset.p, el.dataset.q]) }; doRender(); },
+  campSueltos: () => { S.campSueltos = true; doRender(); },
   campEditar: () => { const j = S.jornadas.find(x => x.id === S.admJ); S.campSel = { jid: j.id, set: new Set(j.campeones || []) }; doRender(); },
   async campGuardar(el){ const jid = el.dataset.j, st = S.campSel?.jid === jid ? S.campSel.set : null; if (!st || st.size !== 2) return toast('Elige 2 nombres');
-    try { await updateDoc(doc(db, 'jornadas', jid), { campeones: [...st] }); S.campSel = null; doRender(); toast('🏆 Campeones guardados'); } catch (e){ toast(errMsg(e)); } },
+    try { await updateDoc(doc(db, 'jornadas', jid), { campeones: [...st] }); S.campSel = null; S.campSueltos = false; doRender(); toast('🏆 Campeones guardados'); } catch (e){ toast(errMsg(e)); } },
+  cerrarGanaste: () => { $('ganaste').classList.add('hidden'); $('ganaste').innerHTML = ''; },
+  async avisoPrueba(el){ const pid = $('prueba-pid').value; if (!pid) return toast('Elige a quién avisar');
+    try { await updateDoc(doc(db, 'jornadas', el.dataset.j), { avisoPrueba: { pid, t: Date.now(), premio: 'Premio de prueba' } }); toast('Aviso enviado a ' + nom(pid) + ' 📱'); setTimeout(() => render(), 9000); } catch (e){ toast(errMsg(e)); } },
   sorteoAbrir: el => abrirRuleta(el.dataset.j),
   rulGirar: () => girarRuleta(),
   rulSiguiente: () => { S.rul.fase = 'listo'; pintarRuleta(); },
@@ -1686,6 +1770,7 @@ const A = {
     if (S.resultados.some(x => x.jornadaId === j.id && x.playerId === pid)){ toast('Ese nombre ya tiene resultado'); return A.hojaVolver(); }
     try {
       await setDoc(doc(db, 'resultados', `${j.id}_${pid}`), { jornadaId: j.id, temporadaId: j.temporadaId ?? null, playerId: pid, resultado: r, estado: 'pendiente', por: m && m.id === pid ? 'jugador' : 'lista', ts: serverTimestamp() });
+      try { localStorage.setItem('yoPid', pid); } catch (e){}
       S.sheet.step = 'ok'; S.sheet.res = r; renderSheet();
     } catch (e){ toast(e?.code?.includes('permission') ? 'Ese nombre ya tiene resultado o la lista ya está cerrada.' : errMsg(e), 4000); A.hojaVolver(); }
   },
