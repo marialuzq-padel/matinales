@@ -110,6 +110,40 @@ nav.bottom button.on{color:var(--primary)}
 .checkrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer}
 .checkrow input{flex:none}
 .btn.wa{background:#25d366;color:#fff}
+/* hoja de resultados */
+#sheet{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+#sheet .sh{background:#fff;width:100%;max-width:620px;border-radius:22px 22px 0 0;padding:18px 14px 22px;max-height:92vh;overflow-y:auto}
+#sheet h2{font-size:1.35rem;text-align:center}
+#sheet .sub{text-align:center;color:var(--muted);margin:4px 0 12px}
+#sheet .pl{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 4px;border-bottom:1px solid var(--line)}
+#sheet .pl .n{font-weight:800;font-size:1.05rem}
+#sheet .pl.yo{background:var(--mint);border-radius:10px;padding:11px 8px}
+.btn.win{background:var(--mint);color:var(--mint-strong);border:2px solid #9fd9bd;padding:24px;font-size:1.2rem}
+.btn.lose{background:var(--primary-soft);color:var(--primary);border:2px solid #b9cdea;padding:24px;font-size:1.2rem}
+.cta{display:block;width:100%;padding:18px;border:none;border-radius:14px;font-size:1.1rem;font-weight:900;background:#10b981;color:#fff;margin-top:10px}
+/* cronómetro */
+#crono{position:fixed;inset:0;z-index:45;background:#0f172a;color:#f8fafc;overflow-y:auto;--c2:#1e293b;--cm:#cbd5e1;--lime:#a3e635;--em:#10b981}
+#crono.claro{background:#f8fafc;color:#0f172a;--c2:#e2e8f0;--cm:#334155;--lime:#3f6212;--em:#047857}
+#crono .in{max-width:620px;margin:0 auto;padding:16px 14px 30px;text-align:center}
+#crono .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+#crono .top button{border:none;border-radius:12px;padding:10px 14px;font-weight:900;font-size:1rem;background:var(--c2);color:inherit}
+#crono .tit{font-weight:800;color:var(--cm);margin-top:14px}
+#crono .rd{font-weight:900;color:var(--lime);font-size:1.3rem;letter-spacing:.5px;margin-top:14px}
+#crono .clk{font-size:min(30vw,9rem);font-weight:900;font-variant-numeric:tabular-nums;line-height:1;margin:10px 0}
+#crono .nx{font-size:1.2rem;font-weight:700;color:var(--cm)}
+#crono .bar{height:12px;background:var(--c2);border-radius:8px;overflow:hidden;margin:16px 0}
+#crono .bar i{display:block;height:100%;background:var(--em);width:0}
+#crono .tiempo{background:#ef4444;color:#fff;border-radius:16px;padding:18px 10px;font-weight:900;font-size:2rem;margin:10px 0;animation:parp 1s infinite}
+@keyframes parp{50%{opacity:.6}}
+#crono .bt{display:block;width:100%;padding:16px;border:none;border-radius:14px;font-weight:900;font-size:1.1rem;margin-top:10px}
+#crono .snd{background:var(--lime);color:#0f172a}
+#crono .ok{background:var(--c2);color:inherit}
+#crono .adj{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:14px}
+#crono .adj button{border:none;border-radius:12px;padding:12px 16px;font-weight:900;font-size:1.05rem;background:var(--c2);color:inherit}
+#crono .lst{margin-top:16px;text-align:left;background:var(--c2);border-radius:14px;padding:10px 14px}
+#crono .lst div{display:flex;justify-content:space-between;padding:5px 0;font-weight:700}
+#crono .lst .done{opacity:.45;text-decoration:line-through}
+#crono .lst .now{color:var(--lime)}
 .box{border:2px solid var(--primary);border-radius:12px;padding:12px;margin:10px 0;background:#fff}
 .seg.wrap{flex-wrap:wrap}
 </style>
@@ -199,8 +233,13 @@ nav.bottom button.on{color:var(--primary)}
         <label>Circuito</label><select id="nj-circ"></select>
         <div class="row">
           <div><label>Fecha</label><input type="date" id="nj-fecha"></div>
-          <div><label>Hora</label><input type="time" id="nj-hora" value="09:30"></div>
+          <div><label>Hora</label><input type="time" id="nj-hora" value="11:30"></div>
         </div>
+        <div class="row">
+          <div><label>Rondas</label><input type="number" id="nj-rondas" min="1" max="12" value="6"></div>
+          <div><label>Minutos por ronda</label><input type="number" id="nj-minr" min="5" max="60" value="20"></div>
+        </div>
+        <p class="muted small" id="nj-fin" style="margin-top:6px"></p>
         <div class="row">
           <div><label>Mínimo de pistas</label><input type="number" id="nj-min" min="1" max="20" value="4"></div>
           <div><label>Máximo de pistas</label><input type="number" id="nj-max" min="1" max="20" value="8"></div>
@@ -289,6 +328,8 @@ nav.bottom button.on{color:var(--primary)}
   <button data-act="nav" data-v="perfil"><span class="i">👤</span>Perfil</button>
   <button data-act="nav" data-v="admin" id="nav-admin" class="hidden"><span class="i">⚙️</span>Admin</button>
 </nav>
+<div id="sheet" class="hidden"></div>
+<div id="crono" class="hidden"></div>
 <div id="toast"></div>
 
 <!-- ================= LÓGICA PURA (sin Firebase) ================= -->
@@ -471,16 +512,27 @@ const normTxt = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀
 const telDe = pid => soloDig(S.priv[pid]?.telefono);
 const hoy = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
 function toast(msg, ms = 2800){ const t = $('toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', ms); }
+const inicioMs = j => new Date(j.fecha + 'T' + (j.hora || '00:00')).getTime() + (j.ajusteMin || 0) * 60000;
+const nRondas = j => j.rondas || 6, minRonda = j => j.minRonda || 20;
+const finMs = j => inicioMs(j) + nRondas(j) * minRonda(j) * 60000;
+const hhmm = ms => new Date(ms).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+const esHoy = j => j.fecha === hoy();
+function proxDomingo(){
+  const d = new Date(); let add = (7 - d.getDay()) % 7;
+  if (add === 0 && (d.getHours() * 60 + d.getMinutes()) > 13 * 60 + 30) add = 7;
+  d.setDate(d.getDate() + add);
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
 function fmtFecha(j, largo = true){
   if (!j?.fecha) return '';
   const d = new Date(j.fecha + 'T' + (j.hora || '00:00'));
   const f = d.toLocaleDateString('es-ES', largo ? { weekday: 'long', day: 'numeric', month: 'long' } : { weekday: 'short', day: 'numeric', month: 'short' });
-  return f.charAt(0).toUpperCase() + f.slice(1) + (largo && j.hora ? ' · ' + j.hora + ' h' : '');
+  return f.charAt(0).toUpperCase() + f.slice(1) + (largo && j.hora ? ' · ' + hhmm(inicioMs(j)) + '–' + hhmm(finMs(j)) + ' h' : '');
 }
 const fmtHora = t => new Date(tsMs(t)).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 function hace(t){ const m = Math.round((Date.now() - tsMs(t)) / 60000); if (m < 1) return 'ahora mismo'; if (m < 60) return `hace ${m} min`; const h = Math.round(m / 60); if (h < 48) return `hace ${h} h`; return `hace ${Math.round(h / 24)} días`; }
 const horasPara = j => (new Date(j.fecha + 'T' + (j.hora || '00:00')).getTime() - Date.now()) / 3600000;
-const ESTADOS = { abierta: ['Inscripciones abiertas', 'mint'], en_juego: ['En juego', 'peach'], cerrada: ['Cerrada', ''] };
+const ESTADOS = { abierta: ['Inscripciones abiertas', 'mint'], en_juego: ['Jugando', 'peach'], resultados: ['🏁 Apuntando resultados', 'lav'], cerrada: ['Cerrada', ''] };
 const estadoChip = e => `<span class="chip ${ESTADOS[e]?.[1] || ''}">${ESTADOS[e]?.[0] || e}</span>`;
 const RES_TXT = { ganado: '🏆 Ganó', perdido: '🤝 Perdió', asistencia: '📅 Asistió' };
 function errMsg(e){
@@ -517,6 +569,8 @@ function visible(j){
 }
 const cuentaParaRanking = j => !j.amistosa && circ(j.circuitoId).tipoRanking === 'puntos';
 const usaLista = j => !cuentaParaRanking(j);   // asistencia se pasa lista en vez de Ganado/Perdido
+/* Ventana para apuntar el último partido: cuando Luz pulsa "Terminada" o 10 min antes del final */
+const ventanaRes = j => cuentaParaRanking(j) && j.estado !== 'cerrada' && (j.estado === 'resultados' || (Date.now() >= finMs(j) - 600000 && Date.now() <= finMs(j) + 18 * 3600000));
 const resJ = jid => S.resultados.filter(r => r.jornadaId === jid).sort((a, b) => tsMs(a.ts) - tsMs(b.ts));
 const activos = jid => S.inscritos[jid] || [];
 const plazasDe = j => calcPlazas(activos(j.id), j.minPistas, j.maxPistas);
@@ -603,7 +657,8 @@ onAuthStateChanged(auth, u => {
 async function migrar(){
   if (!S.isAdmin || migrando || !S.loaded.circuitos || !S.loaded.jornadas || !S.loaded.resultados || !S.loaded.temporadas) return;
   const sinCirc = S.jornadas.filter(j => !j.circuitoId);
-  if (S.circuitos.length && !sinCirc.length && !S.temporadasViejas.length) return;
+  const sinFin = S.jornadas.filter(j => j.circuitoId && j.finMs == null);
+  if (S.circuitos.length && !sinCirc.length && !sinFin.length && !S.temporadasViejas.length) return;
   migrando = true;
   try {
     const b = writeBatch(db);
@@ -611,12 +666,13 @@ async function migrar(){
     sinCirc.forEach(j => {
       const p = periodo('2m', j.fecha);
       const tid = `matinales_${p.key}`;
-      b.update(doc(db, 'jornadas', j.id), { circuitoId: 'matinales', acceso: 'todos', amistosa: false, temporadaId: tid, temporadaNombre: p.nombre, temporadaFin: p.fin, minPistas: 4, maxPistas: 8 });
+      b.update(doc(db, 'jornadas', j.id), { circuitoId: 'matinales', acceso: 'todos', amistosa: false, temporadaId: tid, temporadaNombre: p.nombre, temporadaFin: p.fin, minPistas: 4, maxPistas: 8, rondas: 6, minRonda: 20, finMs: finMs(j) });
       S.resultados.filter(r => r.jornadaId === j.id).forEach(r => b.update(doc(db, 'resultados', r.id), { temporadaId: tid }));
     });
+    sinFin.forEach(j => b.update(doc(db, 'jornadas', j.id), { rondas: nRondas(j), minRonda: minRonda(j), finMs: finMs(j) }));
     S.temporadasViejas.forEach(t => b.delete(doc(db, 'temporadas', t.id)));
     await b.commit();
-    toast('App actualizada a circuitos ✅');
+    if (sinCirc.length || S.temporadasViejas.length) toast('App actualizada a circuitos ✅');
   } catch (e){ console.error(e); toast(errMsg(e), 5000); }
   setTimeout(() => { migrando = false; }, 3000);
 }
@@ -635,6 +691,7 @@ function doRender(){
   $('hdr-sub').textContent = S.isAdmin && m ? '👁️ Viendo como ' + m.nombre : S.isAdmin ? '⚙️ Administradora' : m ? '👋 Hola, ' + m.nombre.split(' ')[0] : 'Americanas · Ranking en vivo';
   renderInicio(); renderRanking(); renderAmericana(); renderPerfil();
   if (S.isAdmin) renderAdmin();
+  autoHoja(); renderSheet();
 }
 
 /* ----- Avisos grandes de bajas (administradoras) ----- */
@@ -748,12 +805,12 @@ function cardJornada(j, m){
       h += `<h3>Resultado del último partido</h3><div class="center" style="font-size:1.1rem;font-weight:700">${RES_TXT[mio.resultado]}</div>
         <p class="center muted" style="margin-top:6px">Enviado a las ${fmtHora(mio.ts)} · ${orden}º en enviarlo<br>
         ${mio.estado === 'aprobado' ? `<span class="chip mint">✓ Validado · +${PTS[mio.resultado]} pts</span>` : '<span class="chip lav">⏳ Pendiente de validar</span>'}</p>`;
-    } else if (j.estado === 'en_juego'){
-      h += `<h3>Resultado del último partido</h3><p class="muted center">Solo cuenta el <b>último partido</b>. ¡Quien lo envía antes gana los empates!</p>
-        <button class="btn mint big" data-act="enviarRes" data-r="ganado" data-j="${j.id}">🏆 HE GANADO</button>
-        <button class="btn sec big" data-act="enviarRes" data-r="perdido" data-j="${j.id}">🤝 He perdido</button>`;
     }
   }
+  if (ventanaRes(j) && (!m || !S.resultados.some(x => x.jornadaId === j.id && x.playerId === m.id)))
+    h += `<button class="cta" data-act="abrirLista" data-j="${j.id}">🏁 APUNTAR RESULTADO DEL ÚLTIMO PARTIDO</button>`;
+  if (esHoy(j) && Date.now() < finMs(j) + 3600000)
+    h += `<button class="btn" style="background:#0f172a;color:#a3e635;font-size:1.05rem" data-act="abrirCrono" data-j="${j.id}">⏱ CRONÓMETRO · cambios cada ${minRonda(j)}′</button>`;
   h += `<div class="row"><button class="btn sec" data-act="verAmericana" data-j="${j.id}">Ver apuntados y pistas</button><button class="btn wa" data-act="waLista" data-j="${j.id}">📲 Compartir</button></div></div>`;
   return h;
 }
@@ -919,10 +976,12 @@ function renderAdmJornada(j){
     <p class="muted small">Temporada: <b>${esc(j.temporadaNombre || '—')}</b> · pistas: mín ${j.minPistas || 4} / máx ${j.maxPistas || 8}</p>
     <div class="row">
       <button class="btn sm ${j.estado === 'abierta' ? '' : 'sec'}" data-act="setEstado" data-e="abierta">Inscripciones</button>
-      ${cuentaParaRanking(j) ? `<button class="btn sm ${j.estado === 'en_juego' ? '' : 'sec'}" data-act="setEstado" data-e="en_juego">En juego</button>` : ''}
+      ${cuentaParaRanking(j) ? `<button class="btn sm ${j.estado === 'en_juego' ? '' : 'sec'}" data-act="setEstado" data-e="en_juego">Jugando</button><button class="btn sm ${j.estado === 'resultados' ? '' : 'sec'}" data-act="setEstado" data-e="resultados">Resultados</button>` : ''}
       <button class="btn sm ${j.estado === 'cerrada' ? '' : 'sec'}" data-act="setEstado" data-e="cerrada">Cerrada</button>
     </div>
-    <p class="muted small" style="margin-top:6px">${cuentaParaRanking(j) ? 'Inscripciones: se apuntan · En juego: envían el resultado · Cerrada: ya no se puede enviar nada.' : 'Al cerrarla, pasa lista en ✅ Resultados para guardar la asistencia.'}</p>
+    <p class="muted small" style="margin-top:6px">${cuentaParaRanking(j) ? `La lista para apuntar el último partido se abre sola a las <b>${hhmm(finMs(j) - 600000)}</b>, o antes si pulsas el botón. Cerrada: ya no se puede enviar nada.` : 'Al cerrarla, pasa lista en ✅ Resultados para guardar la asistencia.'}</p>
+    ${cuentaParaRanking(j) && ['abierta', 'en_juego'].includes(j.estado) ? `<button class="cta" data-act="setEstado" data-e="resultados">🏁 TERMINADA: PEDIR RESULTADOS</button>` : ''}
+    <button class="btn" style="background:#0f172a;color:#a3e635" data-act="abrirCrono" data-j="${j.id}">⏱ Cronómetro · ${nRondas(j)} rondas de ${minRonda(j)}′ (${hhmm(inicioMs(j))}–${hhmm(finMs(j))})</button>
     <div class="row" style="margin-top:8px">
       <div><label>Mín. pistas</label><input type="number" min="1" max="20" value="${j.minPistas || 4}" data-act-change="jMin"></div>
       <div><label>Máx. pistas</label><input type="number" min="1" max="20" value="${j.maxPistas || 8}" data-act-change="jMax"></div>
@@ -1009,6 +1068,10 @@ function renderAdmResultados(j){
   h += ok.length ? ok.map(r => `<div class="list-item"><div><div class="name">${rs.indexOf(r) + 1}º · ${esc(nom(r.playerId))}</div><div class="muted small">${RES_TXT[r.resultado]} · +${PTS[r.resultado]} · ${fmtHora(r.ts)}${r.por === 'admin' ? ' · puesto por ti' : ''}</div></div>
       <div class="row" style="flex:none"><select data-act-change="cambiarRes" data-id="${r.id}" style="width:auto;padding:6px"><option value="ganado"${r.resultado === 'ganado' ? ' selected' : ''}>Ganó</option><option value="perdido"${r.resultado === 'perdido' ? ' selected' : ''}>Perdió</option><option value="asistencia"${r.resultado === 'asistencia' ? ' selected' : ''}>Asistió</option></select>
       <button class="btn sm rose" data-act="borrarRes" data-id="${r.id}">✕</button></div></div>`).join('') : '<p class="empty">Ninguno todavía.</p>';
+  if (j.temporadaId){
+    const rk = calcRanking(S.resultados, S.jornadas, j.temporadaId).porPuntos.slice(0, 3);
+    if (rk.length) h += `<h3>🏆 TOP 3 · ${esc(j.temporadaNombre || '')}</h3>` + rk.map(x => rankRow(x, 'puntos', null, j.temporadaId)).join('') + `<button class="btn wa" data-act="waTop" data-c="${j.circuitoId}" data-t="${j.temporadaId}">📲 Compartir ranking por WhatsApp</button>`;
+  }
   $('adm-res').innerHTML = h;
   fillSelect($('ar-jug'), jugadoresActivos().filter(p => !rs.some(r => r.playerId === p.id)).map(p => ({ v: p.id, t: p.nombre })), '— Elige jugador —');
 }
@@ -1093,14 +1156,168 @@ function renderAdmCircuitos(){
   $('adm-circs').innerHTML = h;
 }
 
+/* ---------- HOJA "APUNTAR RESULTADO" ---------- */
+const cerradasHoja = new Set();
+function autoHoja(){
+  if (S.sheet || (S.isAdmin && !S.asPid)) return;
+  const m = me();
+  const j = jornadasOrd().find(x => visible(x) && ventanaRes(x) && !cerradasHoja.has(x.id) && activos(x.id).length &&
+    (!m || (activos(x.id).some(i => i.id === m.id) && !S.resultados.some(r => r.jornadaId === x.id && r.playerId === m.id))));
+  if (j) S.sheet = { jid: j.id, step: 'lista', q: '' };
+}
+function renderSheet(){
+  const box = $('sheet');
+  if (!S.sheet){ box.classList.add('hidden'); box.innerHTML = ''; box.dataset.k = ''; return; }
+  const j = S.jornadas.find(x => x.id === S.sheet.jid); if (!j){ S.sheet = null; return renderSheet(); }
+  box.classList.remove('hidden');
+  const k = S.sheet.jid + S.sheet.step;
+  if (S.sheet.step === 'lista'){
+    if (box.dataset.k !== k){
+      box.innerHTML = `<div class="sh"><h2>🏁 ¡Americana terminada!</h2><div class="sub">${esc(jLabel(j))}<br>Busca tu nombre y apunta tu <b>último partido</b></div>
+        <input id="sheet-q" placeholder="🔍 Buscar mi nombre…" autocomplete="off" style="margin-bottom:6px"><div id="sheet-list"></div>
+        <button class="btn sec" data-act="cerrarHoja">Cerrar</button></div>`;
+      box.dataset.k = k;
+      $('sheet-q').addEventListener('input', e => { S.sheet.q = e.target.value; renderSheetList(); });
+    }
+    renderSheetList();
+    return;
+  }
+  box.dataset.k = k;
+  if (S.sheet.step === 'confirm'){
+    box.innerHTML = `<div class="sh"><h2>¿Eres ${esc(nom(S.sheet.pid))}?</h2><div class="sub">¿Cómo te fue en el <b>último partido</b>?</div>
+      <button class="btn win" data-act="hojaRes" data-r="ganado">🏆 HE GANADO</button>
+      <button class="btn lose" data-act="hojaRes" data-r="perdido">🤝 He perdido</button>
+      <button class="btn sec" data-act="hojaVolver">No soy yo</button>
+      <p class="muted center" style="margin-top:12px">⏱ Quien lo envía antes gana los empates del ranking</p></div>`;
+  } else if (S.sheet.step === 'ok'){
+    const r = S.resultados.find(x => x.jornadaId === j.id && x.playerId === S.sheet.pid);
+    const orden = r ? resJ(j.id).findIndex(x => x.id === r.id) + 1 : 0;
+    box.innerHTML = `<div class="sh center"><div style="font-size:3rem">✅</div><h2>¡Gracias, ${esc(nom(S.sheet.pid).split(' ')[0])}!</h2>
+      <p style="font-size:1.2rem;font-weight:800;margin-top:6px">${RES_TXT[S.sheet.res]}${orden ? ` · ${orden}º en enviarlo` : ''}</p>
+      <p class="muted" style="margin-top:6px">Luz lo validará en un momento</p>
+      <button class="btn" data-act="hojaRanking" data-c="${j.circuitoId}">Ver cómo va el ranking</button>
+      <button class="btn sec" data-act="hojaVolver">Volver a la lista</button>
+      <button class="btn sec" data-act="cerrarHoja">Cerrar</button></div>`;
+  }
+}
+function renderSheetList(){
+  const j = S.jornadas.find(x => x.id === S.sheet?.jid); const cont = $('sheet-list'); if (!j || !cont) return;
+  const m = me(), q = normTxt(S.sheet.q);
+  let lista = activos(j.id).map(i => i.id).filter(pid => S.players[pid]).sort((a, b) => nom(a).localeCompare(nom(b), 'es'));
+  if (m && lista.includes(m.id)) lista = [m.id, ...lista.filter(x => x !== m.id)];
+  const env = new Set(resJ(j.id).map(r => r.playerId));
+  const vis = lista.filter(pid => !q || normTxt(nom(pid)).includes(q));
+  cont.innerHTML = vis.map(pid => `<div class="pl${m && m.id === pid ? ' yo' : ''}"><span class="n">${esc(nom(pid))}</span>${env.has(pid) ? '<span class="chip mint">✓ enviado</span>' : `<button class="btn sm" data-act="hojaElegir" data-p="${pid}">Apuntar resultado</button>`}</div>`).join('')
+    + `<p class="muted center" style="margin-top:8px">${[...env].filter(x => lista.includes(x)).length} de ${lista.length} enviados</p>`
+    + (!vis.length ? '<p class="empty">No aparece ese nombre. Díselo a Luz.</p>' : '');
+}
+
+/* ---------- CRONÓMETRO ---------- */
+let audioCtx = null, wakeLock = null, cronoTimer = null, cronoIdx = null, tiempoHasta = 0;
+function beep(f, t0, dur, vol = 0.7){
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = 'square'; o.frequency.value = f; o.connect(g); g.connect(audioCtx.destination);
+  g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.02);
+  g.gain.setValueAtTime(vol, t0 + dur - 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.start(t0); o.stop(t0 + dur + 0.02);
+}
+function pitidos(final = false){
+  try { navigator.vibrate?.(final ? [600, 200, 600, 200, 1200] : [400, 200, 400, 200, 400]); } catch (e){}
+  if (!audioCtx || audioCtx.state !== 'running') return;
+  const t = audioCtx.currentTime + 0.05;
+  [0, 0.55, 1.1].forEach(d => beep(1000, t + d, 0.4));
+  if (final) beep(700, t + 1.7, 1.4);
+}
+async function activarSonido(){
+  try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); await audioCtx.resume(); beep(1000, audioCtx.currentTime + 0.05, 0.15, 0.4); } catch (e){ toast('Este móvil no deja reproducir sonido'); }
+  pintarCrono();
+}
+async function pedirWake(){ try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } } catch (e){} }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.crono) pedirWake(); });
+function abrirCrono(jid){
+  S.crono = jid; cronoIdx = null; tiempoHasta = 0;
+  let claro = false; try { claro = localStorage.getItem('crono-claro') === '1'; } catch (e){}
+  const c = $('crono'); c.classList.remove('hidden'); c.classList.toggle('claro', claro);
+  c.innerHTML = `<div class="in">
+    <div class="top"><button data-act="cronoTema">${claro ? '🌙 Oscuro' : '☀️ Claro'}</button><button data-act="cerrarCrono">✕ Cerrar</button></div>
+    <div class="tit" id="cr-tit"></div><div id="cr-tiempo"></div>
+    <div class="rd" id="cr-rd"></div><div class="clk" id="cr-clk">--:--</div><div class="nx" id="cr-nx"></div>
+    <div class="bar"><i id="cr-bar"></i></div>
+    <div id="cr-snd"></div><div id="cr-adm"></div><div class="lst" id="cr-lst"></div>
+    <p style="margin-top:14px;font-size:.9rem;color:var(--cm)">Deja esta pantalla abierta: el móvil no se apagará y sonarán 3 pitidos en cada cambio.</p></div>`;
+  pedirWake(); clearInterval(cronoTimer); cronoTimer = setInterval(tickCrono, 250); tickCrono();
+}
+function cerrarCrono(){ S.crono = null; clearInterval(cronoTimer); $('crono').classList.add('hidden'); $('crono').innerHTML = ''; try { wakeLock?.release(); } catch (e){} wakeLock = null; }
+function tickCrono(){
+  const j = S.jornadas.find(x => x.id === S.crono); if (!j) return cerrarCrono();
+  const ini = inicioMs(j), R = nRondas(j), D = minRonda(j) * 60000, now = Date.now();
+  const idx = now < ini ? -1 : Math.min(R, Math.floor((now - ini) / D));   // -1 antes, 0..R-1 jugando, R fin
+  if (cronoIdx !== null && idx > cronoIdx && idx >= 1){ pitidos(idx >= R); tiempoHasta = now + 20000; }
+  cronoIdx = idx;
+  const mmss = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'); };
+  $('cr-tit').textContent = jLabel(j) + ' · ' + hhmm(ini) + '–' + hhmm(finMs(j));
+  $('cr-tiempo').innerHTML = now < tiempoHasta ? `<div class="tiempo">⏰ ¡TIEMPO!<div style="font-size:1.1rem">${idx >= R ? 'Fin de la americana' : 'Cambio de pista · empieza la ronda ' + (idx + 1)}</div></div>` : '';
+  if (idx < 0){
+    $('cr-rd').textContent = 'EMPIEZA A LAS ' + hhmm(ini);
+    $('cr-clk').textContent = (ini - now) > 3600000 ? hhmm(ini) : mmss(ini - now);
+    $('cr-nx').textContent = 'Primer pitido a las ' + hhmm(ini + D); $('cr-bar').style.width = '0%';
+  } else if (idx >= R){
+    $('cr-rd').textContent = '🏁 ¡FIN DE LA AMERICANA!'; $('cr-clk').textContent = '00:00'; $('cr-nx').textContent = 'Ahora: apuntar el resultado del último partido'; $('cr-bar').style.width = '100%';
+  } else {
+    const fin = ini + (idx + 1) * D;
+    $('cr-rd').textContent = `RONDA ${idx + 1} DE ${R}${idx + 1 === R ? ' · ¡ÚLTIMA!' : ''}`;
+    $('cr-clk').textContent = mmss(fin - now);
+    $('cr-nx').textContent = (idx + 1 === R ? 'Final a las ' : 'Próximo cambio a las ') + hhmm(fin);
+    $('cr-bar').style.width = (100 * (now - ini) / (R * D)).toFixed(1) + '%';
+  }
+  $('cr-lst').innerHTML = Array.from({ length: R }, (_, k) => `<div class="${k < idx ? 'done' : k === idx ? 'now' : ''}"><span>Ronda ${k + 1}</span><span>${hhmm(ini + k * D)} – ${hhmm(ini + (k + 1) * D)}</span></div>`).join('');
+  if (!$('cr-snd').dataset.st || $('cr-snd').dataset.st !== String(audioCtx?.state)) pintarCrono();
+  const adm = S.isAdmin && !S.asPid ? 'si' : 'no';
+  if ($('cr-adm').dataset.v !== adm + (j.ajusteMin || 0) + j.estado){
+    $('cr-adm').dataset.v = adm + (j.ajusteMin || 0) + j.estado;
+    $('cr-adm').innerHTML = adm === 'si' ? `<div class="adj"><span style="font-weight:700">¿Empezáis tarde? Mover todo:</span><button data-act="cronoAjuste" data-v="-1">−1′</button><button data-act="cronoAjuste" data-v="1">+1′</button></div>
+      ${(j.ajusteMin || 0) ? `<p style="color:var(--cm);margin-top:6px">Movido ${j.ajusteMin > 0 ? '+' : ''}${j.ajusteMin} min</p>` : ''}
+      ${cuentaParaRanking(j) && ['abierta', 'en_juego'].includes(j.estado) ? '<button class="bt" style="background:#10b981;color:#fff" data-act="cronoTerminar">🏁 TERMINADA: PEDIR RESULTADOS</button>' : ''}` : '';
+  }
+}
+function pintarCrono(){
+  const el = $('cr-snd'); if (!el) return;
+  const st = String(audioCtx?.state); el.dataset.st = st;
+  el.innerHTML = st === 'running' ? `<button class="bt ok" data-act="cronoProbar">🔊 Sonido activado ✓ · Probar pitido</button>` : `<button class="bt snd" data-act="cronoSonido">🔊 TOCA AQUÍ PARA ACTIVAR EL SONIDO</button>`;
+}
+
 /* ---------- ACCIONES ---------- */
 const A = {
   nav: el => { S.view = el.dataset.v; S.sel = null; doRender(); window.scrollTo(0, 0); },
   rankMode: el => { S.rankMode = el.dataset.v; doRender(); },
   rankCirc: el => { S.rankCirc = el.dataset.v; S.rankTemp = null; doRender(); },
   verRanking: el => { S.rankCirc = el.dataset.c; S.rankTemp = null; S.view = 'ranking'; doRender(); window.scrollTo(0, 0); },
+  abrirLista: el => { cerradasHoja.delete(el.dataset.j); S.sheet = { jid: el.dataset.j, step: 'lista', q: '' }; renderSheet(); },
+  cerrarHoja: () => { if (S.sheet) cerradasHoja.add(S.sheet.jid); S.sheet = null; renderSheet(); },
+  hojaElegir: el => { S.sheet.step = 'confirm'; S.sheet.pid = el.dataset.p; renderSheet(); },
+  hojaVolver: () => { S.sheet.step = 'lista'; S.sheet.pid = null; renderSheet(); },
+  hojaRanking: el => { cerradasHoja.add(S.sheet.jid); S.sheet = null; renderSheet(); A.verRanking(el); },
+  async hojaRes(el){
+    const j = S.jornadas.find(x => x.id === S.sheet.jid), pid = S.sheet.pid, r = el.dataset.r, m = me();
+    if (S.resultados.some(x => x.jornadaId === j.id && x.playerId === pid)){ toast('Ese nombre ya tiene resultado'); return A.hojaVolver(); }
+    try {
+      await setDoc(doc(db, 'resultados', `${j.id}_${pid}`), { jornadaId: j.id, temporadaId: j.temporadaId ?? null, playerId: pid, resultado: r, estado: 'pendiente', por: m && m.id === pid ? 'jugador' : 'lista', ts: serverTimestamp() });
+      S.sheet.step = 'ok'; S.sheet.res = r; renderSheet();
+    } catch (e){ toast(e?.code?.includes('permission') ? 'Ese nombre ya tiene resultado o la lista ya está cerrada.' : errMsg(e), 4000); A.hojaVolver(); }
+  },
+  abrirCrono: el => abrirCrono(el.dataset.j),
+  cerrarCrono: () => cerrarCrono(),
+  cronoSonido: () => activarSonido(),
+  cronoProbar: () => pitidos(false),
+  cronoTema(){ const c = $('crono'); const claro = !c.classList.contains('claro'); try { localStorage.setItem('crono-claro', claro ? '1' : '0'); } catch (e){} abrirCrono(S.crono); },
+  async cronoAjuste(el){
+    const j = S.jornadas.find(x => x.id === S.crono); const aj = (j.ajusteMin || 0) + parseInt(el.dataset.v);
+    try { await updateDoc(doc(db, 'jornadas', j.id), { ajusteMin: aj, finMs: finMs({ ...j, ajusteMin: aj }) }); } catch (e){ toast(errMsg(e)); }
+  },
+  async cronoTerminar(){ S.admJ = S.crono; await A.setEstado({ dataset: { e: 'resultados' } }); },
   waLista: el => compartir(msgLista(S.jornadas.find(x => x.id === el.dataset.j))),
   waPistas: el => compartir(msgPistas(S.jornadas.find(x => x.id === el.dataset.j))),
+  waTop: el => compartir(msgRanking(el.dataset.c, el.dataset.t, 'puntos')),
   waRanking: el => compartir(msgRanking(S.rankCirc, S.rankTemp, el.dataset.m)),
   verAmericana: el => { S.ameJ = el.dataset.j; S.view = 'americana'; doRender(); window.scrollTo(0, 0); },
   admTab: el => { S.admTab = el.dataset.v; doRender(); },
@@ -1176,12 +1393,14 @@ const A = {
     const amistosa = $('nj-amistosa').checked;
     const p = periodo(c.duracion || '2m', fecha);
     const minP = parseInt($('nj-min').value) || c.minPistas || 4, maxP = parseInt($('nj-max').value) || c.maxPistas || 8;
+    const rondas = parseInt($('nj-rondas').value) || 6, minR = parseInt($('nj-minr').value) || 20;
     if (minP > maxP) return toast('El mínimo no puede ser mayor que el máximo');
     try {
       const ref = await addDoc(collection(db, 'jornadas'), {
         fecha, hora, circuitoId: cid, acceso: c.acceso || 'todos', amistosa, ultima: !amistosa && $('nj-ultima').checked, estado: 'abierta',
         temporadaId: amistosa ? null : `${cid}_${p.key}`, temporadaNombre: amistosa ? '' : p.nombre, temporadaFin: amistosa ? '' : p.fin,
-        minPistas: minP, maxPistas: maxP, creada: serverTimestamp()
+        minPistas: minP, maxPistas: maxP, rondas, minRonda: minR, ajusteMin: 0,
+        finMs: new Date(fecha + 'T' + hora).getTime() + rondas * minR * 60000, creada: serverTimestamp()
       });
       S.admJ = ref.id; $('nj-ultima').checked = false; $('nj-amistosa').checked = false;
       setTimeout(() => { const nj = S.jornadas.find(x => x.id === ref.id); if (nj && confirm('¿Quieres mandar ya la convocatoria por WhatsApp?')) compartir(msgLista(nj)); }, 800);
@@ -1190,8 +1409,10 @@ const A = {
   },
   async setEstado(el){
     const j = S.jornadas.find(x => x.id === S.admJ);
+    if (el.dataset.e === 'resultados' && !confirm('¿Dar por terminada la americana?\nA todos les saldrá la lista para apuntar su último partido.')) return;
     try {
       await updateDoc(doc(db, 'jornadas', S.admJ), { estado: el.dataset.e });
+      if (el.dataset.e === 'resultados') toast('Lista de resultados abierta para todos 🏁', 3500);
       if (el.dataset.e === 'cerrada' && usaLista(j)){ S.admTab = 'resultados'; S.lista = null; doRender(); toast('Ahora pasa lista para guardar la asistencia 📋', 3500); }
     } catch (e){ toast(errMsg(e)); }
   },
@@ -1393,7 +1614,9 @@ document.addEventListener('change', e => {
   if (el.id === 'nj-circ'){ const c = circ(el.value); $('nj-min').value = c.minPistas || 4; $('nj-max').value = c.maxPistas || 8; }
 });
 $('adm-buscar').addEventListener('input', () => renderAdmJugadores());
-$('nj-fecha').value = hoy();
+$('nj-fecha').value = proxDomingo();
+function finNueva(){ const f = $('nj-fecha').value, h = $('nj-hora').value; if (!f || !h) return; const fin = new Date(f + 'T' + h).getTime() + (parseInt($('nj-rondas').value) || 6) * (parseInt($('nj-minr').value) || 20) * 60000; $('nj-fin').innerHTML = `⏱ Termina a las <b>${hhmm(fin)}</b> · pitidos cada ${parseInt($('nj-minr').value) || 20} minutos`; }
+['nj-fecha', 'nj-hora', 'nj-rondas', 'nj-minr'].forEach(id => $(id).addEventListener('input', finNueva)); finNueva();
 function fsNivel(){ return document.documentElement.classList.contains('fs3') ? 3 : document.documentElement.classList.contains('fs2') ? 2 : 1; }
 function setFs(n){ const h = document.documentElement; h.classList.remove('fs2', 'fs3'); if (n > 1) h.classList.add('fs' + n); $('btn-fs').textContent = n === 3 ? 'A–' : 'A+'; }
 try { setFs(parseInt(localStorage.getItem('fs')) || 1); } catch (e){}
@@ -1415,6 +1638,7 @@ const LISTA_INICIAL = [
 ];
 
 render();
+setInterval(() => { if (!S.sheet && !editing()) render(); }, 60000);
 </script>
 </body>
 </html>
