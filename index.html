@@ -482,6 +482,7 @@ const firebaseConfig = {
   messagingSenderId: "227155783201",
   appId: "1:227155783201:web:3794c516d8ec15a7a9bd60"
 };
+const VERSION = '18 nov · sorteo';   // ← cambia en cada subida para comprobar que el móvil tiene la última
 const ADMIN_EMAILS = ["marialuzq@gmail.com", "charoj@gmail.com"];  // ← deben coincidir con las reglas
 const NOTIFY_URL = "https://script.google.com/macros/s/AKfycbxk5_HE3P5C9fisqHIRppbbRP8o2Zt6HmB-KS5sK16p-qqIJW3klcqhLFB6LFxEZYg/exec";   // ← URL del Apps Script (aviso-app.gs) para avisos por email (vacío = sin email)
 const EMAIL_DOMINIO = "jugador.matinales-padel.app";
@@ -613,7 +614,7 @@ function msgLista(j){
   return t + '\n\n👉 Apúntate aquí: ' + APP_URL + '\n(o dímelo por aquí y te apunto)';
 }
 function msgPistas(j){
-  let t = cabecera(j) + '\n\n🎾 *PRIMER PARTIDO*\n';
+  let t = cabecera(j) + '\n\n🎾 *PISTAS Y PAREJAS*\n';
   t += j.pistas.map((p, k) => `*Pista ${k + 1}:* ${nom(p.a1)} y ${nom(p.a2)} 🆚 ${nom(p.b1)} y ${nom(p.b2)}`).join('\n');
   if (j.reservas?.length) t += '\n\nReservas: ' + j.reservas.map(nom).join(', ');
   return t + '\n\n¡Suerte a todos! 💪\n👉 ' + APP_URL;
@@ -627,7 +628,7 @@ function dibujarPistas(j){
   c.fillStyle = '#ffffff'; c.fillRect(0, 0, W, H);
   const ci = circ(j.circuitoId);
   c.fillStyle = '#0f172a'; c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.font = '900 38px' + FF; c.fillText(`${ci.emoji || '🎾'} ${ci.nombre.toUpperCase()} · PRIMER PARTIDO`, W / 2, 52);
+  c.font = '900 38px' + FF; c.fillText(`${ci.emoji || '🎾'} ${ci.nombre.toUpperCase()} · PISTAS Y PAREJAS`, W / 2, 52);
   c.fillStyle = '#334155'; c.font = '700 28px' + FF; c.fillText(fmtFecha(j), W / 2, 100);
   const fit = (txt, max, size) => { let s = size; do { c.font = `800 ${s}px` + FF; s -= 1; } while (c.measureText(txt).width > max && s > 16); };
   let y = 140;
@@ -654,7 +655,7 @@ async function compartirPistasImg(j){
   for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
   const file = new File([u8], `pistas-${j.fecha}.png`, { type: 'image/png' });
   if (navigator.canShare && navigator.canShare({ files: [file] })){
-    try { await navigator.share({ files: [file], title: 'Pistas', text: `${circ(j.circuitoId).emoji || '🎾'} ${circ(j.circuitoId).nombre} · ${fmtFecha(j)} · primer partido` }); return; }
+    try { await navigator.share({ files: [file] }); return; }
     catch (e){ if (e.name === 'AbortError') return; }
   }
   const a = document.createElement('a'); a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
@@ -689,10 +690,11 @@ function msgRanking(cid, tid, modo){
   const lista = modo === 'puntos' ? rk.porPuntos : rk.porAsistencia;
   const tn = temporadasDe(cid).find(t => t.id === tid)?.nombre || '';
   let t = `🏆 *RANKING ${c.nombre.toUpperCase()}${modo === 'asistencia' ? ' · ASISTENCIA' : ''}* · ${tn}\n\n`;
-  t += lista.slice(0, 10).map(s => { const pos = modo === 'puntos' ? s.pos : s.posA; return `${pos <= 3 ? ['🥇', '🥈', '🥉'][pos - 1] : pos + '.'} ${nom(s.pid)} — ${modo === 'puntos' ? s.pts + ' pts' : s.asist + ' americana' + (s.asist === 1 ? '' : 's')}`; }).join('\n');
+  t += lista.slice(0, 5).map(s => { const pos = modo === 'puntos' ? s.pos : s.posA; return `${pos <= 3 ? ['🥇', '🥈', '🥉'][pos - 1] : pos + '.'} ${nom(s.pid)} — ${modo === 'puntos' ? s.pts + ' pts' : s.asist + ' americana' + (s.asist === 1 ? '' : 's')}`; }).join('\n');
   const ult = jornadasOrd().find(j => j.ultima && j.estado !== 'cerrada' && j.temporadaId === tid);
   if (ult) t += `\n\n🏁 La americana del *${fmtFecha(ult, false)}* es la ÚLTIMA de la temporada. Una victoria da 8 puntos: ¡todo puede cambiar! 🔥`;
-  return t + '\n\n👉 Ranking en vivo: ' + APP_URL;
+  if (lista.length > 5) t += `\n… y ${lista.length - 5} más`;
+  return t + '\n\n👉 Ranking completo en vivo: ' + APP_URL;
 }
 
 /* ---------- FIREBASE: ESCUCHAS ---------- */
@@ -984,7 +986,7 @@ function renderAmericana(){
   const P = plazasDe(j), ids = new Set(activos(j.id).map(i => i.id));
   let h = `<div class="card">${circChip(j.circuitoId)}<h2 style="margin-top:6px">${esc(fmtFecha(j))}</h2>${estadoChip(j.estado)} ${j.ultima ? '<span class="chip peach">🏁 Última del ranking</span>' : ''} ${j.amistosa ? '<span class="chip">🤝 Amistosa</span>' : ''}</div>`;
   if (j.pistas?.length){
-    h += `<div class="card"><h2>Primer partido</h2>${j.pistas.map((p, k) => courtHTML(p, k, false, m, ids)).join('')}
+    h += `<div class="card"><h2>🎾 Pistas y parejas</h2>${j.pistas.map((p, k) => courtHTML(p, k, false, m, ids)).join('')}
       ${j.reservas?.length ? `<p class="muted small">Reservas: ${j.reservas.map(nom).map(esc).join(', ')}</p>` : ''}<button class="btn wa" data-act="waPistas" data-j="${j.id}">📲 Compartir imagen de las pistas</button></div>`;
   }
   const rs = resJ(j.id);
@@ -1262,7 +1264,7 @@ function pistasHTML(j){
     if (j.pistas?.length) pz += j.pistas.map((p, k) => courtHTML(p, k, false, null, ids)).join('') + (j.reservas?.length ? `<p class="muted small">Reservas: ${j.reservas.map(nom).map(esc).join(', ')}</p>` : '');
     else pz += `<div class="card"><p>Juegan los <b>${P.juegan.length}</b> primeros en apuntarse (${P.pistas} pistas).${P.reservas.length + P.espera.length ? ` Los ${P.reservas.length + P.espera.length} últimos quedan de reserva.` : ''}</p></div>`;
     if (j.pistas?.length) pz += `<div class="row"><button class="btn sec" data-act="editarPistas">✏️ Cambiar</button><button class="btn wa" data-act="waPistas" data-j="${j.id}">📲 Pistas</button></div>`;
-    pz += `<button class="btn ${j.pistas?.length ? 'sec' : ''}" data-act="generar" ${P.juegan.length < 4 ? 'disabled' : ''}>🎾 ${j.pistas?.length ? 'Volver a generar por nivel' : 'Generar primer partido por nivel'}</button>`;
+    pz += `<button class="btn ${j.pistas?.length ? 'sec' : ''}" data-act="generar" ${P.juegan.length < 4 ? 'disabled' : ''}>🎾 ${j.pistas?.length ? 'Volver a generar por nivel' : 'Generar pistas y parejas por nivel'}</button>`;
   }
   return pz;
 }
@@ -1328,7 +1330,8 @@ function renderAMas(){
     <button class="mi" data-act="modal" data-t="verComo"><i>👁️</i><span>Ver la app como un jugador<small>para hacer pruebas</small></span>›</button>
     <button class="mi" data-act="fs"><i>🔠</i><span>Tamaño de letra<small>Ahora: ${fsTxt} · toca para cambiar</small></span></button>
     <button class="mi" data-act="waApp"><i>📲</i><span>Compartir enlace de la app<small>por WhatsApp</small></span>›</button>
-    <button class="mi" data-act="logout" style="color:var(--rose-strong)"><i>🚪</i><span>Cerrar sesión<small>${esc(S.user?.email || '')}</small></span></button>`;
+    <button class="mi" data-act="logout" style="color:var(--rose-strong)"><i>🚪</i><span>Cerrar sesión<small>${esc(S.user?.email || '')}</small></span></button>
+    <p class="muted center" style="margin-top:14px">Versión de la app: <b>${VERSION}</b></p>`;
 }
 
 /* ----- Circuitos ----- */
