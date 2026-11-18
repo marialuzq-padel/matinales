@@ -5,9 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#4a6fa5">
 <title>Matinales de Pádel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#f5f6fa; --card:#ffffff; --text:#1c2436; --muted:#4f596d; --line:#dfe3ec;
+  --bg:#f5f6fa; --card:#ffffff; --text:#0f172a; --muted:#334155; --line:#d5dbe6;
   --primary:#4a6fa5; --primary-soft:#e3ecf8;
   --mint:#dcf3e8; --mint-strong:#2f8f67;
   --peach:#ffe9d9; --peach-strong:#c0622a;
@@ -19,23 +21,26 @@
 html{font-size:17px}
 html.fs2{font-size:19px}
 html.fs3{font-size:21.5px}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);padding-bottom:96px;font-size:1rem;line-height:1.45}
+body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);padding-bottom:96px;font-size:1rem;line-height:1.45;font-weight:500}
+button,input,select{font-family:inherit}
+h2,h3{font-weight:900}
+b,strong{font-weight:800}
 header{background:var(--primary);color:#fff;padding:14px 56px 12px;text-align:center;position:relative}
 #btn-fs{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:10px;padding:6px 9px;font-weight:800;font-size:.95rem}
 .bell{background:var(--rose);color:var(--rose-strong);border:1px solid #f5c6cc;border-radius:14px;padding:12px 14px;margin-bottom:14px;font-weight:600}
 .bell .row{margin-top:8px}
 .match{background:var(--mint);color:var(--mint-strong);border-radius:10px;padding:8px 10px;font-weight:700;margin-top:6px}
 .warn{background:var(--peach);color:var(--peach-strong);border-radius:10px;padding:8px 10px;font-weight:600;margin-top:6px}
-header h1{font-size:1.25rem;font-weight:800;letter-spacing:-.3px}
+header h1{font-size:1.25rem;font-weight:900;letter-spacing:-.3px}
 header .sub{font-size:.85rem;opacity:.95;margin-top:2px}
 .container{max-width:620px;margin:0 auto;padding:14px 12px}
 .view{display:none}.view.active{display:block}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
-.card h2{font-size:1.02rem;margin-bottom:10px;color:var(--primary)}
+.card h2{font-size:1.12rem;margin-bottom:10px;color:var(--primary);font-weight:900}
 .card h3{font-size:.92rem;margin:12px 0 6px;color:var(--text)}
-.muted{color:var(--muted);font-size:.9rem}
+.muted{color:var(--muted);font-size:.92rem;font-weight:600}
 .small{font-size:.85rem}
-label{display:block;font-size:.9rem;font-weight:600;margin:8px 0 4px}
+label{display:block;font-size:.92rem;font-weight:800;margin:8px 0 4px}
 input,select{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:1rem;background:#fff;color:var(--text);outline:none}
 input:focus,select:focus{border-color:var(--primary)}
 input[type=checkbox]{width:20px;height:20px;accent-color:var(--primary)}
@@ -59,7 +64,10 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--primary)}
 .banner b{display:block;font-size:1rem;margin-bottom:4px}
 .list-item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
 .list-item:last-child{border-bottom:none}
-.list-item .name{font-weight:600}
+.list-item .name{font-weight:800}
+.pl2 .nm{font-weight:800!important}
+.btn{font-weight:800}
+.plazo{display:block;text-align:center;font-weight:800;color:#8f3f10;background:#ffe3cf;border-radius:10px;padding:8px;margin-top:8px}
 .rank-row{display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid var(--line);border-radius:8px}
 .rank-row .pos{width:28px;text-align:center;font-weight:800;color:var(--muted)}
 .rank-row .who{flex:1;min-width:0}
@@ -531,7 +539,13 @@ function visible(j){
 const cuentaParaRanking = j => !j.amistosa && circ(j.circuitoId).tipoRanking === 'puntos';
 const usaLista = j => !cuentaParaRanking(j);   // asistencia se pasa lista en vez de Ganado/Perdido
 /* Ventana para apuntar el último partido: cuando Luz pulsa "Terminada" o 10 min antes del final */
-const ventanaRes = j => cuentaParaRanking(j) && j.estado !== 'cerrada' && (j.estado === 'resultados' || (Date.now() >= finMs(j) - 600000 && Date.now() <= finMs(j) + 18 * 3600000));
+const PLAZO_MS = 48 * 3600000;   // 48 h después de terminar para apuntar el resultado; luego se cierra sola
+const plazoMs = j => finMs(j) + PLAZO_MS;
+const ventanaRes = j => cuentaParaRanking(j) && j.estado !== 'cerrada' && Date.now() <= plazoMs(j) && (j.estado === 'resultados' || Date.now() >= finMs(j) - 600000);
+function plazoTxt(j){
+  const d = new Date(plazoMs(j)), h = Math.max(1, Math.ceil((plazoMs(j) - Date.now()) / 3600000));
+  return `⏰ Tienes hasta el ${d.toLocaleDateString('es-ES', { weekday: 'long' })} a las ${hhmm(plazoMs(j))} (quedan ${h} h)`;
+}
 const resJ = jid => S.resultados.filter(r => r.jornadaId === jid).sort((a, b) => tsMs(a.ts) - tsMs(b.ts));
 const activos = jid => S.inscritos[jid] || [];
 const plazasDe = j => calcPlazas(activos(j.id), j.minPistas, j.maxPistas);
@@ -565,6 +579,19 @@ function msgPistas(j){
   if (j.reservas?.length) t += '\n\nReservas: ' + j.reservas.map(nom).join(', ');
   return t + '\n\n¡Suerte a todos! 💪\n👉 ' + APP_URL;
 }
+function msgRecordatorio(j){
+  const env = new Set(resJ(j.id).map(r => r.playerId));
+  const faltan = activos(j.id).filter(i => !env.has(i.id)).map(i => nom(i.id));
+  const d = new Date(plazoMs(j));
+  return `${cabecera(j)}\n\n🏁 ¿Todavía no has apuntado el resultado de tu *último partido*?\n⏰ Tienes hasta el *${d.toLocaleDateString('es-ES', { weekday: 'long' })} a las ${hhmm(plazoMs(j))}*. ¡Cuenta para el ranking!\n\nFaltan: ${faltan.join(', ')}\n\n👉 Apúntalo aquí (sin registrarte): ${APP_URL}`;
+}
+function msgResultadosDia(j){
+  const rs = resJ(j.id), gan = rs.filter(r => r.resultado === 'ganado').map(r => nom(r.playerId));
+  let t = `${cabecera(j)}\n\n🏁 *¡Gracias a los ${rs.length} que vinisteis!*`;
+  if (gan.length) t += `\n🏆 Ganaron el último partido: ${gan.join(', ')}`;
+  if (j.temporadaId){ const top = calcRanking(S.resultados, S.jornadas, j.temporadaId).porPuntos.slice(0, 3); if (top.length) t += `\n\n🏆 *Top 3 ${j.temporadaNombre}*\n` + top.map(x => `${['🥇', '🥈', '🥉'][x.pos - 1]} ${nom(x.pid)} — ${x.pts} pts`).join('\n'); }
+  return t + '\n\n👉 Ranking: ' + APP_URL;
+}
 function msgRanking(cid, tid, modo){
   const c = circ(cid), rk = calcRanking(S.resultados, S.jornadas, tid);
   const lista = modo === 'puntos' ? rk.porPuntos : rk.porAsistencia;
@@ -586,7 +613,7 @@ onSnapshot(collection(db, 'jornadas'), s => {
   S.jornadas = s.docs.map(d => ({ id: d.id, ...d.data() }));
   S.loaded.jornadas = true;
   S.jornadas.filter(j => j.estado !== 'cerrada').forEach(j => subInscritos(j.id));
-  migrar(); render();
+  migrar(); autoCerrar(); render();
 }, onErr);
 
 function subInscritos(jid){
@@ -611,8 +638,19 @@ onAuthStateChanged(auth, u => {
     solUnsub = onSnapshot(doc(db, 'solicitudes', u.uid), d => { S.miSolicitud = d.exists() ? d.data() : null; render(); }, () => {});
   }
   if (!S.isAdmin){ S.asPid = null; if (S.view === 'admin') S.view = 'inicio'; }
-  migrar(); render();
+  migrar(); autoCerrar(); render();
 });
+
+/* ---------- CIERRE AUTOMÁTICO 48 h DESPUÉS DE TERMINAR ---------- */
+const autoCerradas = new Set();
+async function autoCerrar(){
+  if (!S.isAdmin || !S.loaded.jornadas) return;
+  const viejas = S.jornadas.filter(j => j.estado !== 'cerrada' && j.fecha && j.hora && Date.now() > plazoMs(j) && !autoCerradas.has(j.id));
+  if (!viejas.length) return;
+  viejas.forEach(j => autoCerradas.add(j.id));
+  try { const b = writeBatch(db); viejas.forEach(j => b.update(doc(db, 'jornadas', j.id), { estado: 'cerrada', cerradaAuto: true })); await b.commit(); }
+  catch (e){ console.error(e); }
+}
 
 /* ---------- MIGRACIÓN (una sola vez, la hace una administradora) ---------- */
 async function migrar(){
@@ -777,7 +815,7 @@ function cardJornada(j, m){
     }
   }
   if (ventanaRes(j) && (!m || !S.resultados.some(x => x.jornadaId === j.id && x.playerId === m.id)))
-    h += `<button class="cta" data-act="abrirLista" data-j="${j.id}">🏁 APUNTAR RESULTADO DEL ÚLTIMO PARTIDO</button>`;
+    h += `<button class="cta" data-act="abrirLista" data-j="${j.id}">🏁 APUNTAR RESULTADO DEL ÚLTIMO PARTIDO</button><span class="plazo">${plazoTxt(j)}</span>`;
   if (esHoy(j) && Date.now() < finMs(j) + 3600000)
     h += `<button class="btn" style="background:#0f172a;color:#a3e635;font-size:1.05rem" data-act="abrirCrono" data-j="${j.id}">⏱ CRONÓMETRO · cambios cada ${minRonda(j)}′</button>`;
   h += `<div class="row"><button class="btn sec" data-act="verAmericana" data-j="${j.id}">Ver apuntados y pistas</button><button class="btn wa" data-act="waLista" data-j="${j.id}">📲 Compartir</button></div></div>`;
@@ -993,7 +1031,7 @@ function renderAAvisos(){
 function renderAAmericanas(){
   const cont = $('v-a-americanas');
   if (S.admDet){ const j = S.jornadas.find(x => x.id === S.admDet); S.admJ = j.id; subInscritos(j.id); cont.innerHTML = fichaHTML(j); return; }
-  const prox = jornadasOrd().filter(j => j.estado !== 'cerrada'), ant = jornadasOrd().filter(j => j.estado === 'cerrada').reverse().slice(0, 20);
+  const prox = jornadasOrd().filter(j => j.estado !== 'cerrada'), ant = jornadasOrd().filter(j => j.estado === 'cerrada').reverse();
   const pj = pendJ();
   const card = j => { const P = plazasDe(j);
     return `<button class="jc" data-act="abrirDet" data-j="${j.id}">${dateTile(j)}<span class="i"><span class="n" style="display:block">${esc(circ(j.circuitoId).emoji || '')} ${esc(circ(j.circuitoId).nombre)} · ${esc(j.hora || '')}</span>
@@ -1001,7 +1039,19 @@ function renderAAmericanas(){
       ${pj[j.id] ? `<span class="chip lav">${pj[j.id]} por validar</span>` : estadoChip(j.estado)} ${j.amistosa ? '<span class="chip">🤝</span>' : ''}${j.ultima ? '<span class="chip peach">🏁</span>' : ''}</span><span class="ar">›</span></button>`; };
   cont.innerHTML = `<h2 style="margin:4px 4px 0;color:var(--primary)">🎾 Americanas</h2>
     <div class="sec-t">Próximas</div>${prox.length ? prox.map(card).join('') : '<p class="empty">No hay americanas próximas. Pulsa ＋ Nueva.</p>'}
-    ${ant.length ? `<div class="sec-t">Anteriores</div>${ant.map(card).join('')}` : ''}<div style="height:70px"></div>`;
+    ${historialHTML(ant, card)}<div style="height:70px"></div>`;
+}
+function historialHTML(ant, card){
+  if (!ant.length) return '';
+  const meses = {}; ant.forEach(j => (meses[j.fecha.slice(0, 7)] = meses[j.fecha.slice(0, 7)] || []).push(j));
+  const keys = Object.keys(meses).sort().reverse();
+  if (S.mesAbierto === undefined) S.mesAbierto = keys[0];
+  return `<div class="sec-t">📚 Historial</div>` + keys.map(k => {
+    const js = meses[k], nombre = new Date(k + '-15T12:00').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+    const jug = js.reduce((a, j) => a + resJ(j.id).length, 0), open = S.mesAbierto === k;
+    return `<button class="jc" style="justify-content:space-between" data-act="mes" data-m="${k}"><span class="i"><span class="n" style="display:block;font-size:1.08rem">${esc(nombre.charAt(0).toUpperCase() + nombre.slice(1))}</span><span class="muted">${js.length} americana${js.length === 1 ? '' : 's'}${jug ? ' · ' + jug + ' jugadores' : ''}</span></span><span class="ar">${open ? '▾' : '›'}</span></button>`
+      + (open ? `<div style="margin:-2px 0 10px 12px">${js.map(card).join('')}</div>` : '');
+  }).join('');
 }
 
 function fichaHTML(j){
@@ -1009,7 +1059,12 @@ function fichaHTML(j){
   let h = `<div class="dethd"><button class="bk" data-act="cerrarDet">‹</button><div class="tt"><b>${esc(fmtFecha(j, false))} · ${esc(hhmm(inicioMs(j)))}</b><small>${esc(circ(j.circuitoId).emoji || '')} ${esc(circ(j.circuitoId).nombre)}${j.temporadaNombre ? ' · ' + esc(j.temporadaNombre) : ' · 🤝 amistosa'}${j.ultima ? ' · 🏁 última' : ''}</small></div><button class="mn" data-act="modal" data-t="ajustes">⋮</button></div>
     <div class="steps">${flujo.map((e, k) => `<div class="${k < idx ? 'done' : k === idx ? 'now' : ''}"><i></i>${PASO_TXT[e]}</div>`).join('')}</div>`;
   if (sig) h += `<button class="btn" style="font-size:1.08rem;padding:15px" data-act="setEstado" data-e="${sig[0]}">${sig[1]}</button>`;
-  else h += `<p class="muted center" style="margin:8px 0">🔒 Americana cerrada. Para reabrirla, usa ⋮.</p>`;
+  else {
+    const rs = resJ(j.id), g = rs.filter(r => r.resultado === 'ganado').length, pe = rs.filter(r => r.resultado === 'perdido').length;
+    h += `<div class="card" style="margin-top:8px"><h2>📋 Resumen</h2><p style="font-weight:800;font-size:1.05rem">${rs.length} jugadores${j.pistas?.length ? ' · ' + j.pistas.length + (j.pistas.length === 1 ? ' pista' : ' pistas') : ''}${cuentaParaRanking(j) ? `<br>🏆 ${g} ganaron · 🤝 ${pe} perdieron` : ''}</p>
+      ${j.cerradaAuto ? '<p class="muted small">Cerrada automáticamente a las 48 h.</p>' : ''}${cuentaParaRanking(j) && rs.length ? `<button class="btn wa" data-act="waResDia" data-j="${j.id}">📲 Compartir resultados</button>` : ''}
+      <p class="muted small" style="margin-top:6px">🔒 Cerrada. Para reabrirla, usa ⋮.</p></div>`;
+  }
   if (esHoy(j) && j.estado !== 'cerrada') h += `<button class="btn" style="background:#0f172a;color:#a3e635;font-size:1.1rem;padding:15px" data-act="abrirCrono" data-j="${j.id}">⏱ ABRIR CRONÓMETRO</button>`;
   const P = plazasDe(j), pend = resJ(j.id).filter(r => r.estado === 'pendiente').length;
   h += `<div class="dtabs">
@@ -1024,6 +1079,10 @@ function fichaHTML(j){
 
 function apuntadosHTML(j){
   const P = plazasDe(j);
+  if (j.estado === 'cerrada'){
+    const rs = resJ(j.id);
+    return `<div class="card" style="padding:4px 12px">${rs.length ? rs.map((r, k) => `<div class="pl2"><span class="num">${k + 1}</span><div class="nm">${esc(nom(r.playerId))}<small>${RES_TXT[r.resultado]}${r.estado === 'pendiente' ? ' · ⏳ sin validar' : ''}</small></div></div>`).join('') : '<p class="empty">No hay asistentes registrados.</p>'}</div>`;
+  }
   let h = `<div class="counter"><span class="big">${P.total}</span> apuntados → <b>${P.pistas} pista${P.pistas === 1 ? '' : 's'}</b>${P.sobran ? ` + ${P.sobran}` : ''}${P.espera.length ? ` · ${P.espera.length} en espera` : ''}
     <div class="small" style="margin-top:4px">${P.faltanMin ? `⚠️ Faltan <b>${P.faltanMin}</b> para el mínimo (${j.minPistas || 4} pistas)` : P.lleno ? '✅ Completo' : `🎾 Faltan <b>${P.faltanOtra}</b> para la ${P.pistas + 1}ª pista`}</div></div>`;
   const bj = S.bajas.filter(b => b.jornadaId === j.id && !b.visto);
@@ -1072,6 +1131,7 @@ function resultadosHTML(j){
   const sinRes = activos(j.id).filter(i => !rs.some(r => r.playerId === i.id));
   let h = `<div class="card"><h2>${rs.length} de ${activos(j.id).length} enviados</h2>`;
   h += pend.length ? `<button class="cta" data-act="aprobarTodos">✓ VALIDAR LOS ${pend.length}</button>` + pend.map(r => `<div class="pl2"><span class="num">${rs.indexOf(r) + 1}</span><div class="nm">${esc(nom(r.playerId))}<small>${RES_TXT[r.resultado]} · ${fmtHora(r.ts)}</small></div><button class="btn sm mint" data-act="aprobar" data-id="${r.id}">✓</button><button class="btn sm rose" data-act="borrarRes" data-id="${r.id}">✕</button></div>`).join('') : '<p class="muted">Nada pendiente de validar.</p>';
+  if (sinRes.length && ventanaRes(j)) h += `<span class="plazo">${plazoTxt(j).replace('Tienes', 'Tienen')}</span><button class="btn wa" data-act="waRecordar" data-j="${j.id}">📲 Recordar a los ${sinRes.length} que faltan</button>`;
   if (sinRes.length) h += `<div class="sec-t">Faltan (${sinRes.length}) · pónselo tú</div>` + sinRes.map(i => `<div class="pl2"><div class="nm">${esc(nom(i.id))}</div><button class="btn sm mint" data-act="adminRes" data-p="${i.id}" data-r="ganado">Ganó</button><button class="btn sm sec" data-act="adminRes" data-p="${i.id}" data-r="perdido">Perdió</button></div>`).join('');
   h += `<button class="btn sec" data-act="modal" data-t="resLibre">＋ Resultado de alguien no apuntado</button></div>`;
   if (ok.length) h += `<div class="sec-t">✅ Validados (${ok.length})</div><div class="card" style="padding:4px 12px">` + ok.map(r => `<div class="pl2"><span class="num">${rs.indexOf(r) + 1}</span><div class="nm">${esc(nom(r.playerId))}<small>+${PTS[r.resultado]} · ${fmtHora(r.ts)}${r.por === 'admin' ? ' · puesto por ti' : ''}</small></div>
@@ -1171,15 +1231,20 @@ function renderModal(){
       <label>Circuito</label><select id="nj-circ">${S.circuitos.map(c => `<option value="${c.id}">${esc(c.emoji || '')} ${esc(c.nombre)}</option>`).join('')}</select>
       <div class="row"><div><label>Día</label><input type="date" id="nj-fecha" value="${proxDomingo()}"></div><div><label>Hora</label><input type="time" id="nj-hora" value="11:30"></div></div>
       <p class="muted" id="nj-fin" style="margin-top:8px"></p>
+      <div style="background:var(--mint);border:2px solid #9bd8bc;border-radius:14px;padding:10px 12px;margin-top:10px">
+        <label class="checkrow" style="border:none;padding:4px 0;font-weight:900"><input type="checkbox" id="nj-rep"> 🔁 Repetir cada semana</label>
+        <div id="nj-rep-box" class="hidden"><label>Hasta</label><input type="date" id="nj-hasta"></div>
+        <p id="nj-rep-txt" style="font-weight:700;margin-top:6px"></p>
+      </div>
       <details class="more"><summary>⚙️ Más opciones</summary>
         <div class="row"><div><label>Rondas</label><input type="number" id="nj-rondas" min="1" max="12" value="6"></div><div><label>Minutos por ronda</label><input type="number" id="nj-minr" min="5" max="60" value="20"></div></div>
         <div class="row"><div><label>Mín. pistas</label><input type="number" id="nj-min" min="1" max="20" value="${S.circuitos[0]?.minPistas || 4}"></div><div><label>Máx. pistas</label><input type="number" id="nj-max" min="1" max="20" value="${S.circuitos[0]?.maxPistas || 8}"></div></div>
         <label class="checkrow"><input type="checkbox" id="nj-ultima"> 🏁 Última americana del ranking</label>
         <label class="checkrow"><input type="checkbox" id="nj-amistosa"> 🤝 Amistosa (no cuenta para el ranking)</label>
       </details>
-      <button class="cta" data-act="crearJornada">Crear americana</button><button class="btn sec" data-act="cerrarModal">Cancelar</button>`;
+      <button class="cta" id="nj-btn" data-act="crearJornada">Crear americana</button><button class="btn sec" data-act="cerrarModal">Cancelar</button>`;
   } else if (M.t === 'creada' && j){
-    h = `<div class="center"><div style="font-size:3rem">✅</div><h2>¡Americana creada!</h2><p class="muted">${esc(fmtFecha(j))}</p></div>
+    h = `<div class="center"><div style="font-size:3rem">✅</div><h2>${M.n > 1 ? `¡${M.n} americanas creadas!` : '¡Americana creada!'}</h2><p class="muted">${M.n > 1 ? 'La primera: ' : ''}${esc(fmtFecha(j))}</p></div>
       <button class="btn wa" style="padding:18px;font-size:1.1rem" data-act="waLista" data-j="${j.id}">📲 Mandar convocatoria por WhatsApp</button>
       <button class="btn" data-act="abrirDet" data-j="${j.id}">Abrir la americana</button><button class="btn sec" data-act="cerrarModal">Cerrar</button>`;
   } else if (M.t === 'apuntar' && j){
@@ -1266,7 +1331,7 @@ function renderSheet(){
   const k = S.sheet.jid + S.sheet.step;
   if (S.sheet.step === 'lista'){
     if (box.dataset.k !== k){
-      box.innerHTML = `<div class="sh"><h2>🏁 ¡Americana terminada!</h2><div class="sub">${esc(jLabel(j))}<br>Busca tu nombre y apunta tu <b>último partido</b></div>
+      box.innerHTML = `<div class="sh"><h2>🏁 ¡Americana terminada!</h2><div class="sub">${esc(jLabel(j))}<br>Busca tu nombre y apunta tu <b>último partido</b></div><span class="plazo" style="margin-bottom:10px">${plazoTxt(j)}</span>
         <input id="sheet-q" placeholder="🔍 Buscar mi nombre…" autocomplete="off" style="margin-bottom:6px"><div id="sheet-list"></div>
         <button class="btn sec" data-act="cerrarHoja">Cerrar</button></div>`;
       box.dataset.k = k;
@@ -1388,6 +1453,9 @@ const A = {
   abrirDet: el => { S.view = 'a-americanas'; S.admDet = el.dataset.j; S.admJ = el.dataset.j; S.detTab = el.dataset.t || 'apuntados'; S.modal = null; S.draft = null; S.sel = null; S.lista = null; doRender(); window.scrollTo(0, 0); },
   cerrarDet: () => { S.admDet = null; S.draft = null; doRender(); window.scrollTo(0, 0); },
   detTab: el => { S.detTab = el.dataset.v; doRender(); },
+  mes: el => { S.mesAbierto = S.mesAbierto === el.dataset.m ? null : el.dataset.m; doRender(); },
+  waResDia: el => compartir(msgResultadosDia(S.jornadas.find(x => x.id === el.dataset.j))),
+  waRecordar: el => compartir(msgRecordatorio(S.jornadas.find(x => x.id === el.dataset.j))),
   waApp: () => compartir('🎾 *Matinales de Pádel*\nApúntate a las americanas y mira el ranking aquí:\n👉 ' + APP_URL),
   async validarJ(el){ S.admJ = el.dataset.j; await A.aprobarTodos(); },
   rankMode: el => { S.rankMode = el.dataset.v; doRender(); },
@@ -1488,21 +1556,27 @@ const A = {
   /* --- admin: americanas --- */
   async crearJornada(){
     const cid = $('nj-circ').value; if (!cid) return toast('Elige el circuito');
-    const c = circ(cid), fecha = $('nj-fecha').value, hora = $('nj-hora').value;
-    if (!fecha) return toast('Elige la fecha');
+    const c = circ(cid), hora = $('nj-hora').value;
+    const fechas = fechasNueva(); if (!fechas.length) return toast('Elige la fecha');
     const amistosa = $('nj-amistosa').checked;
-    const p = periodo(c.duracion || '2m', fecha);
     const minP = parseInt($('nj-min').value) || c.minPistas || 4, maxP = parseInt($('nj-max').value) || c.maxPistas || 8;
     const rondas = parseInt($('nj-rondas').value) || 6, minR = parseInt($('nj-minr').value) || 20;
     if (minP > maxP) return toast('El mínimo no puede ser mayor que el máximo');
+    const ya = fechas.filter(f => S.jornadas.some(j => j.fecha === f && j.circuitoId === cid));
+    if (ya.length && !confirm(`Ya hay americana de ${c.nombre} el ${ya.join(', ')}. ¿Crear igualmente?`)) return;
     try {
-      const ref = await addDoc(collection(db, 'jornadas'), {
-        fecha, hora, circuitoId: cid, acceso: c.acceso || 'todos', amistosa, ultima: !amistosa && $('nj-ultima').checked, estado: 'abierta',
-        temporadaId: amistosa ? null : `${cid}_${p.key}`, temporadaNombre: amistosa ? '' : p.nombre, temporadaFin: amistosa ? '' : p.fin,
-        minPistas: minP, maxPistas: maxP, rondas, minRonda: minR, ajusteMin: 0,
-        finMs: new Date(fecha + 'T' + hora).getTime() + rondas * minR * 60000, creada: serverTimestamp()
+      const b = writeBatch(db); const ids = [];
+      fechas.forEach((fecha, k) => {
+        const p = periodo(c.duracion || '2m', fecha), ref = doc(collection(db, 'jornadas')); ids.push(ref.id);
+        b.set(ref, {
+          fecha, hora, circuitoId: cid, acceso: c.acceso || 'todos', amistosa, ultima: !amistosa && fechas.length === 1 && $('nj-ultima').checked, estado: 'abierta',
+          temporadaId: amistosa ? null : `${cid}_${p.key}`, temporadaNombre: amistosa ? '' : p.nombre, temporadaFin: amistosa ? '' : p.fin,
+          minPistas: minP, maxPistas: maxP, rondas, minRonda: minR, ajusteMin: 0,
+          finMs: new Date(fecha + 'T' + hora).getTime() + rondas * minR * 60000, creada: serverTimestamp()
+        });
       });
-      S.admJ = ref.id; S.modal = { t: 'creada', j: ref.id, v: 1 };
+      await b.commit();
+      S.admJ = ids[0]; S.modal = { t: 'creada', j: ids[0], n: ids.length, v: 1 };
       setTimeout(() => { if (S.modal?.t === 'creada'){ S.modal.v++; doRender(); } }, 700);
       doRender();
     } catch (e){ toast(errMsg(e)); }
@@ -1720,8 +1794,25 @@ document.addEventListener('change', e => {
   if (el.id === 'nj-circ'){ const c = circ(el.value); $('nj-min').value = c.minPistas || 4; $('nj-max').value = c.maxPistas || 8; }
 });
 $('adm-buscar').addEventListener('input', () => renderAdmJugadores());
-document.addEventListener('input', e => { if (['nj-fecha', 'nj-hora', 'nj-rondas', 'nj-minr'].includes(e.target.id)) finNueva(); });
-function finNueva(){ if (!$('nj-fecha')) return; const f = $('nj-fecha').value, h = $('nj-hora').value; if (!f || !h) return; const fin = new Date(f + 'T' + h).getTime() + (parseInt($('nj-rondas').value) || 6) * (parseInt($('nj-minr').value) || 20) * 60000; $('nj-fin').innerHTML = `⏱ Termina a las <b>${hhmm(fin)}</b> · pitidos cada ${parseInt($('nj-minr').value) || 20} minutos`; }
+['input', 'change'].forEach(ev => document.addEventListener(ev, e => { if (['nj-fecha', 'nj-hora', 'nj-rondas', 'nj-minr', 'nj-rep', 'nj-hasta'].includes(e.target.id)) finNueva(); }));
+function sumaDias(f, n){ const d = new Date(f + 'T12:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
+function fechasNueva(){
+  const f = $('nj-fecha')?.value; if (!f) return [];
+  if (!$('nj-rep')?.checked) return [f];
+  const hasta = $('nj-hasta').value || f, out = [];
+  for (let d = f; d <= hasta && out.length < 30; d = sumaDias(d, 7)) out.push(d);
+  return out;
+}
+function finNueva(){
+  if (!$('nj-fecha')) return; const f = $('nj-fecha').value, h = $('nj-hora').value; if (!f || !h) return;
+  const fin = new Date(f + 'T' + h).getTime() + (parseInt($('nj-rondas').value) || 6) * (parseInt($('nj-minr').value) || 20) * 60000;
+  $('nj-fin').innerHTML = `⏱ Termina a las <b>${hhmm(fin)}</b> · pitidos cada ${parseInt($('nj-minr').value) || 20} minutos`;
+  const rep = $('nj-rep').checked; $('nj-rep-box').classList.toggle('hidden', !rep);
+  if (rep && !$('nj-hasta').value) $('nj-hasta').value = sumaDias(f, 28);
+  const fs = fechasNueva();
+  $('nj-rep-txt').innerHTML = rep ? `→ Se crean <b>${fs.length} americana${fs.length === 1 ? '' : 's'}</b>: ${fs.map(x => new Date(x + 'T12:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })).join(', ')}` : '';
+  $('nj-btn').textContent = fs.length > 1 ? `Crear ${fs.length} americanas` : 'Crear americana';
+}
 
 function fsNivel(){ return document.documentElement.classList.contains('fs3') ? 3 : document.documentElement.classList.contains('fs2') ? 2 : 1; }
 function setFs(n){ const h = document.documentElement; h.classList.remove('fs2', 'fs3'); if (n > 1) h.classList.add('fs' + n); $('btn-fs').textContent = n === 3 ? 'A–' : 'A+'; }
@@ -1744,7 +1835,7 @@ const LISTA_INICIAL = [
 ];
 
 render();
-setInterval(() => { if (!S.sheet && !editing()) render(); }, 60000);
+setInterval(() => { autoCerrar(); if (!S.sheet && !editing()) render(); }, 60000);
 </script>
 </body>
 </html>
