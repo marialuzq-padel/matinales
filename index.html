@@ -67,6 +67,11 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--primary)}
 .list-item .name{font-weight:800}
 .pl2 .nm{font-weight:800!important}
 .btn{font-weight:800}
+.faltan{background:#ffe3cf;border:2px solid #f3b98f;color:#6b2e0b;border-radius:16px;padding:14px;margin-bottom:14px}
+.faltan h3{font-size:1.1rem;margin-bottom:6px;color:#6b2e0b}
+.faltan .nms{font-weight:800;font-size:1.05rem;line-height:1.5}
+.faltan .pz{font-weight:800;margin-top:6px}
+.faltan button{display:block;width:100%;margin-top:10px;padding:14px;border:none;border-radius:12px;background:#c2410c;color:#fff;font-weight:900;font-size:1.05rem}
 .plazo{display:block;text-align:center;font-weight:800;color:#8f3f10;background:#ffe3cf;border-radius:10px;padding:8px;margin-top:8px}
 .rank-row{display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid var(--line);border-radius:8px}
 .rank-row .pos{width:28px;text-align:center;font-weight:800;color:var(--muted)}
@@ -583,7 +588,7 @@ function msgRecordatorio(j){
   const env = new Set(resJ(j.id).map(r => r.playerId));
   const faltan = activos(j.id).filter(i => !env.has(i.id)).map(i => nom(i.id));
   const d = new Date(plazoMs(j));
-  return `${cabecera(j)}\n\n🏁 ¿Todavía no has apuntado el resultado de tu *último partido*?\n⏰ Tienes hasta el *${d.toLocaleDateString('es-ES', { weekday: 'long' })} a las ${hhmm(plazoMs(j))}*. ¡Cuenta para el ranking!\n\nFaltan: ${faltan.join(', ')}\n\n👉 Apúntalo aquí (sin registrarte): ${APP_URL}`;
+  return `${cabecera(j)}\n\n🏁 ¿Todavía no has apuntado el resultado de tu *último partido*?\n⏰ Tienes hasta el *${d.toLocaleDateString('es-ES', { weekday: 'long' })} a las ${hhmm(plazoMs(j))}*. ¡Cuenta para el ranking!\n\n⚠️ *FALTAN POR APUNTAR:*\n${faltan.map(n => '🔴 *' + n + '*').join('\n')}\n\n👉 Apúntalo aquí (sin registrarte): ${APP_URL}`;
 }
 function msgResultadosDia(j){
   const rs = resJ(j.id), gan = rs.filter(r => r.resultado === 'ganado').map(r => nom(r.playerId));
@@ -715,6 +720,20 @@ function alarmaBajas(){
   }).join('')}</div>`;
 }
 
+/* ----- Aviso naranja: quién falta por apuntar su resultado (solo durante las 48 h) ----- */
+function avisoFaltan(admin){
+  return jornadasOrd().filter(j => visible(j) && ventanaRes(j)).map(j => {
+    const env = new Set(resJ(j.id).map(r => r.playerId));
+    const faltan = activos(j.id).filter(i => !env.has(i.id) && S.players[i.id]);
+    if (!faltan.length) return '';
+    const d = new Date(plazoMs(j));
+    return `<div class="faltan"><h3>🏁 Faltan por apuntar su resultado${admin ? ` (${faltan.length})` : ''}</h3>
+      <div class="nms">${faltan.map(i => esc(nom(i.id))).join(' · ')}</div>
+      <div class="pz">⏰ Hasta el ${d.toLocaleDateString('es-ES', { weekday: 'long' })} a las ${hhmm(plazoMs(j))} · ${esc(jLabel(j))}</div>
+      ${admin ? `<button data-act="waRecordar" data-j="${j.id}" style="background:#25d366">📲 Recordar por WhatsApp</button>` : `<button data-act="abrirLista" data-j="${j.id}">Apuntar el mío</button>`}</div>`;
+  }).join('');
+}
+
 /* ----- Inicio ----- */
 function renderInicio(){
   const m = me();
@@ -745,7 +764,7 @@ function renderInicio(){
     }
     b += `</div>`;
   });
-  $('ini-banner').innerHTML = b;
+  $('ini-banner').innerHTML = avisoFaltan(false) + b;
 
   // Americanas abiertas
   let h = '';
@@ -970,6 +989,7 @@ function renderAInicio(){
   const bp = bajasPend(), pj = pendJ(), nPend = Object.values(pj).reduce((a, b) => a + b, 0);
   if (bp.length) h += `<button class="al r" data-act="nav" data-v="a-avisos"><span class="ic">⚠️</span><span class="tx">${bp.length === 1 ? '1 baja sin resolver' : bp.length + ' bajas sin resolver'}<small>${bp.slice(0, 2).map(b => esc(nom(b.playerId)) + (b.tardia ? ' · ⏰ última hora' : '')).join(' · ')}</small></span><span class="go">›</span></button>`;
   if (S.solicitudes.length) h += `<button class="al m" data-act="nav" data-v="a-avisos"><span class="ic">👋</span><span class="tx">${S.solicitudes.length} alta${S.solicitudes.length > 1 ? 's' : ''} pendiente${S.solicitudes.length > 1 ? 's' : ''}<small>${S.solicitudes.slice(0, 2).map(x => esc(x.nombre)).join(' · ')}</small></span><span class="go">›</span></button>`;
+  h += avisoFaltan(true);
   if (nPend) h += `<button class="al l" data-act="nav" data-v="a-avisos"><span class="ic">✅</span><span class="tx">${nPend} resultado${nPend > 1 ? 's' : ''} por validar</span><span class="go">›</span></button>`;
   const prox = jornadasOrd().filter(j => j.estado !== 'cerrada');
   if (!S.loaded.jornadas) h += '<div class="card empty">Cargando…</div>';
@@ -1629,7 +1649,9 @@ const A = {
       if (!ins.some(i => i.id === nuevo)) b.set(doc(db, 'jornadas', jid, 'inscritos', nuevo), { parejaId: null, por: 'admin', ts: serverTimestamp() });
       if (j.pistas?.length){
         const pistas = j.pistas.map(p => { const q = { ...p }; ['a1', 'a2', 'b1', 'b2'].forEach(k => { if (q[k] === viejo) q[k] = nuevo; }); return q; });
+        const enPista = j.pistas.some(p => [p.a1, p.a2, p.b1, p.b2].includes(viejo));
         const reservas = (j.reservas || []).filter(x => x !== nuevo && x !== viejo);
+        if (!enPista && !j.pistas.some(p => [p.a1, p.a2, p.b1, p.b2].includes(nuevo))) reservas.push(nuevo);   // no tenía pista → el sustituto queda de reserva
         b.update(doc(db, 'jornadas', jid), { pistas, reservas });
       }
       S.bajas.filter(x => x.jornadaId === jid && x.playerId === viejo && !x.visto).forEach(x => b.update(doc(db, 'bajas', x.id), { visto: true }));
