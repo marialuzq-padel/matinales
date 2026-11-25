@@ -395,7 +395,7 @@ function calcRanking(resultados, jornadas, tid){
   const jk = {}; jornadas.forEach(j => jk[j.id] = jornadaKey(j));
   const st = {};
   resultados.forEach(r => {
-    if (!tid || r.temporadaId !== tid || r.estado !== 'aprobado') return;
+    if (!tid || r.estado !== 'aprobado' || (Array.isArray(tid) ? !tid.includes(r.temporadaId) : r.temporadaId !== tid)) return;
     const s = st[r.playerId] || (st[r.playerId] = { pid: r.playerId, pts: 0, asist: 0, gan: 0, per: 0, porJ: {} });
     s.pts += PTS[r.resultado] || 0;
     s.asist++;
@@ -488,7 +488,7 @@ if (typeof module !== 'undefined') module.exports = { PTS, tsMs, periodo, calcRa
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, getDocs, serverTimestamp, writeBatch }
+import { getFirestore, collection, doc, onSnapshot, setDoc, addDoc, updateDoc, deleteDoc, getDocs, serverTimestamp, writeBatch, Timestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ---------- CONFIGURACIÓN ---------- */
@@ -500,7 +500,7 @@ const firebaseConfig = {
   messagingSenderId: "227155783201",
   appId: "1:227155783201:web:3794c516d8ec15a7a9bd60"
 };
-const VERSION = '18 nov · directo';   // ← cambia en cada subida para comprobar que el móvil tiene la última
+const VERSION = '21 nov · acumulado';   // ← cambia en cada subida para comprobar que el móvil tiene la última
 const ADMIN_EMAILS = ["marialuzq@gmail.com", "charoj@gmail.com"];  // ← deben coincidir con las reglas
 const NOTIFY_URL = "https://script.google.com/macros/s/AKfycbxk5_HE3P5C9fisqHIRppbbRP8o2Zt6HmB-KS5sK16p-qqIJW3klcqhLFB6LFxEZYg/exec";   // ← URL del Apps Script (aviso-app.gs) para avisos por email (vacío = sin email)
 const EMAIL_DOMINIO = "jugador.matinales-padel.app";
@@ -704,9 +704,9 @@ function msgResultadosDia(j){
   return t + '\n\n👉 Ranking: ' + APP_URL;
 }
 function msgRanking(cid, tid, modo){
-  const c = circ(cid), rk = calcRanking(S.resultados, S.jornadas, tid);
+  const c = circ(cid), rk = calcRanking(S.resultados, S.jornadas, tidsRank(cid, tid));
   const lista = modo === 'puntos' ? rk.porPuntos : rk.porAsistencia;
-  const tn = temporadasDe(cid).find(t => t.id === tid)?.nombre || '';
+  const tn = nombreRank(cid, tid);
   let t = `🏆 *RANKING ${c.nombre.toUpperCase()}${modo === 'asistencia' ? ' · ASISTENCIA' : ''}* · ${tn}\n\n`;
   t += lista.slice(0, 5).map(s => { const pos = modo === 'puntos' ? s.pos : s.posA; return `${pos <= 3 ? ['🥇', '🥈', '🥉'][pos - 1] : pos + '.'} ${nom(s.pid)} — ${modo === 'puntos' ? s.pts + ' pts' : s.asist + ' americana' + (s.asist === 1 ? '' : 's')}`; }).join('\n');
   const ult = jornadasOrd().find(j => j.ultima && j.estado !== 'cerrada' && j.temporadaId === tid);
@@ -964,6 +964,13 @@ function rankRow(s, modo, m, tid){
 }
 
 /* ----- Ranking ----- */
+/* Ranking acumulado del curso (septiembre–agosto): suma todos los bimestres */
+const cursoDe = tid => { const m = /_(\d{4})-(\d{2})$/.exec(tid || ''); if (!m) return null; const y = +m[1], mo = +m[2]; return mo >= 9 ? y : y - 1; };
+function tidsRank(cid, sel){
+  if (sel && sel.startsWith('acum_')){ const y = +sel.slice(5); return temporadasDe(cid).filter(t => cursoDe(t.id) === y).map(t => t.id); }
+  return sel;
+}
+function nombreRank(cid, sel){ if (sel?.startsWith('acum_')){ const y = +sel.slice(5); return `Acumulado curso ${y}-${String(y + 1).slice(2)}`; } return temporadasDe(cid).find(t => t.id === sel)?.nombre || ''; }
 function renderRanking(){
   const cs = circsConRanking().filter(visibleCirc);
   if (!S.rankCirc || !cs.some(c => c.id === S.rankCirc)) S.rankCirc = cs[0]?.id || null;
@@ -976,19 +983,22 @@ function renderRanking(){
   $('seg-puntos').classList.toggle('on', modo === 'puntos');
   $('seg-asistencia').classList.toggle('on', modo === 'asistencia');
   const ts = c ? temporadasDe(c.id) : [];
-  if (!S.rankTemp || !ts.some(t => t.id === S.rankTemp)) S.rankTemp = c ? tempActual(c.id)?.id || null : null;
-  fillSelect($('rank-temp'), ts.map(t => ({ v: t.id, t: t.nombre + (t.fin >= hoy() ? ' (en curso)' : ' (finalizada)') })));
+  const cursos = c ? [...new Set(ts.map(t => cursoDe(t.id)).filter(x => x != null))].sort((a, b) => b - a) : [];
+  const opts = [...cursos.map(y => ({ v: 'acum_' + y, t: `📊 Acumulado curso ${y}-${String(y + 1).slice(2)}` })), ...ts.map(t => ({ v: t.id, t: t.nombre + (t.fin >= hoy() ? ' (en curso)' : ' (finalizada)') }))];
+  if (!S.rankTemp || !opts.some(o => o.v === S.rankTemp)) S.rankTemp = c ? tempActual(c.id)?.id || null : null;
+  fillSelect($('rank-temp'), opts);
   $('rank-temp').value = S.rankTemp || '';
   $('rank-temp').classList.toggle('hidden', !ts.length);
   if (!c || !S.rankTemp){ $('rank-list').innerHTML = '<p class="empty">Todavía no hay ranking.</p>'; $('rank-info').textContent = ''; return; }
-  const rk = calcRanking(S.resultados, S.jornadas, S.rankTemp);
+  const tids = tidsRank(c.id, S.rankTemp), acum = Array.isArray(tids);
+  const rk = calcRanking(S.resultados, S.jornadas, tids);
   const lista = modo === 'puntos' ? rk.porPuntos : rk.porAsistencia;
-  const pend = S.resultados.filter(r => r.temporadaId === S.rankTemp && r.estado === 'pendiente').length;
-  $('rank-info').innerHTML = (modo === 'puntos'
+  const pend = S.resultados.filter(r => (acum ? tids.includes(r.temporadaId) : r.temporadaId === tids) && r.estado === 'pendiente').length;
+  $('rank-info').innerHTML = (acum ? '<b>📊 Suma de todos los bimestres del curso.</b> ' : '') + (modo === 'puntos'
     ? 'Asistir +5 · Último partido ganado +3 / perdido +1. Empate: gana quien envió antes su resultado.'
     : 'Americanas jugadas en la temporada. ¡Premio a quien más venga!') +
     (pend ? ` <span class="chip lav">${pend} resultado(s) pendientes de validar</span>` : '');
-  $('rank-list').innerHTML = lista.length ? lista.map(s => rankRow(s, modo, me(), S.rankTemp)).join('') + `<button class="btn wa" data-act="waRanking" data-m="${modo}">📲 Compartir ranking por WhatsApp</button>` : '<p class="empty">Aún no hay resultados validados.</p>';
+  $('rank-list').innerHTML = lista.length ? lista.map(s => rankRow(s, modo, me(), acum ? null : S.rankTemp)).join('') + `<button class="btn wa" data-act="waRanking" data-m="${modo}">📲 Compartir ranking por WhatsApp</button>` : '<p class="empty">Aún no hay resultados validados.</p>';
 }
 
 /* ----- Americana ----- */
@@ -1363,6 +1373,7 @@ function renderAMas(){
     <button class="mi" data-act="nav" data-v="a-circuitos"><i>🏷️</i><span>Circuitos y temporadas<small>${S.circuitos.map(c => esc(c.nombre)).join(', ')}</small></span>›</button>
     <button class="mi" data-act="modal" data-t="verComo"><i>👁️</i><span>Ver la app como un jugador<small>para hacer pruebas</small></span>›</button>
     <button class="mi" data-act="fs"><i>🔠</i><span>Tamaño de letra<small>Ahora: ${fsTxt} · toca para cambiar</small></span></button>
+    ${S.jornadas.some(j => j.importada) ? '' : '<button class="mi" data-act="modalImport" style="border:2px solid #f5c542"><i>📥</i><span>Importar el ranking del formulario<small>Pasa a la app las respuestas de Google Forms</small></span>›</button>'}
     <button class="mi" data-act="waApp"><i>📲</i><span>Compartir enlace de la app<small>por WhatsApp</small></span>›</button>
     <button class="mi" data-act="logout" style="color:var(--rose-strong)"><i>🚪</i><span>Cerrar sesión<small>${esc(S.user?.email || '')}</small></span></button>
     <p class="muted center" style="margin-top:14px">Versión de la app: <b>${VERSION}</b></p>`;
@@ -1493,6 +1504,15 @@ function renderModal(){
       <div id="nj-circs"></div>
       <p class="muted small" style="margin-top:6px">Con el teléfono, la app lo reconocerá si algún día se registra.</p>
       <button class="cta" data-act="adminNuevoJugador">Añadir jugador</button><button class="btn sec" data-act="cerrarModal">Cancelar</button>`;
+  } else if (M.t === 'importar'){
+    const pl = planImport(), nuevos = pl.map.filter(m => !m.p).length;
+    h = `<h2>📥 Importar el ranking del formulario</h2>
+      <p class="muted">${FORM_DATOS.length} resultados de ${pl.fechas.length} domingos: ${pl.fechas.map(f => new Date(f + 'T12:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })).join(', ')}. Sin duplicados.</p>
+      <h3 style="margin-top:12px">¿A qué ficha va cada nombre?</h3>
+      <div class="card" style="padding:4px 12px;margin-top:6px">${pl.map.map(m => `<div class="pl2"><div class="nm">${esc(m.n)}<small>${m.p ? '→ ✅ ' + esc(m.p.nombre) : '→ ➕ ficha nueva'}</small></div></div>`).join('')}</div>
+      <p class="muted small">${nuevos} ficha${nuevos === 1 ? '' : 's'} nueva${nuevos === 1 ? '' : 's'}. Si alguna no cuadra, corrige antes el nombre en 👥 Jugadores y vuelve aquí.</p>
+      ${pl.ya ? `<p class="warn">${pl.ya} resultados ya estaban en la app y no se repetirán.</p>` : ''}
+      <button class="cta" data-act="importarForm">📥 Importar ahora</button><button class="btn sec" data-act="cerrarModal">Cancelar</button>`;
   } else if (M.t === 'verComo'){
     h = `<h2>👁️ Ver la app como un jugador</h2><p class="muted">Verás exactamente lo que ve él. Lo que hagas se guarda de verdad a su nombre.</p>
       <select id="ver-como"><option value="">— Elige jugador —</option>${jugadoresActivos().map(p => `<option value="${p.id}">${esc(p.nombre)}</option>`).join('')}</select>
@@ -1678,6 +1698,79 @@ function mostrarGanaste(j, k, x, prueba){
   setDoc(doc(db, 'avisos', key), { jid: j.id, k, pid: x.pid, ts: serverTimestamp() }).catch(() => {});
 }
 
+
+/* ---------- IMPORTAR EL RANKING DEL FORMULARIO DE GOOGLE (uso único) ---------- */
+// Datos limpios de "Ranking_Matinales_MdP_Completo": nombres unificados, sin respuestas repetidas
+// (cuenta la primera de cada persona en cada domingo) y asignados al domingo de su americana.
+const FORM_DATOS = [
+  ['2026-09-06', '2026-09-09T10:13:00', 'Adolf Sayol', 'G'], ['2026-09-06', '2026-09-09T10:13:14', 'Yolanda Gómez', 'G'],
+  ['2026-09-06', '2026-09-09T10:20:39', 'Raúl Mula Navarro', 'P'], ['2026-09-06', '2026-09-09T11:14:06', 'Alejandro Caldentey', 'G'],
+  ['2026-09-06', '2026-09-09T12:54:40', 'Alba Torrico García', 'P'], ['2026-09-06', '2026-09-09T13:18:23', 'Maria Carro', 'G'],
+  ['2026-09-06', '2026-09-09T16:53:06', 'Camilo Postius Conde', 'G'], ['2026-09-06', '2026-09-10T08:31:56', 'Ruth Castillo Tienda', 'P'],
+  ['2026-09-06', '2026-09-10T08:32:44', 'Lucas Fernández Herrera', 'G'], ['2026-09-06', '2026-09-10T09:22:39', 'María Luz Cervero', 'P'],
+  ['2026-09-06', '2026-09-12T11:47:40', 'Ruben González López', 'G'], ['2026-09-06', '2026-09-12T13:59:05', 'Francisco Javier González Rodríguez', 'P'],
+  ['2026-09-06', '2026-09-12T20:31:08', 'Ginés Segura', 'G'],
+  ['2026-09-13', '2026-09-13T13:34:27', 'Alejandro Caldentey', 'G'], ['2026-09-13', '2026-09-13T13:39:11', 'Sheila Barrionuevo', 'P'],
+  ['2026-09-13', '2026-09-13T13:52:03', 'Jordi Herranz', 'P'], ['2026-09-13', '2026-09-13T14:19:50', 'Núria López Roig', 'G'],
+  ['2026-09-13', '2026-09-13T14:21:32', 'Ester Pericas', 'G'], ['2026-09-13', '2026-09-13T14:21:43', 'Camilo Postius Conde', 'G'],
+  ['2026-09-13', '2026-09-13T14:27:46', 'Raúl Mula Navarro', 'G'], ['2026-09-13', '2026-09-13T14:28:11', 'Alba Torrico García', 'G'],
+  ['2026-09-13', '2026-09-13T14:33:39', 'Francisco Javier González Rodríguez', 'G'], ['2026-09-13', '2026-09-13T16:13:01', 'Yolanda Gómez', 'P'],
+  ['2026-09-13', '2026-09-13T16:14:20', 'Pablo Gómez', 'P'], ['2026-09-13', '2026-09-13T17:11:31', 'Adolf Sayol', 'G'],
+  ['2026-09-13', '2026-09-13T18:46:29', 'Nour Chams', 'P'], ['2026-09-13', '2026-09-13T19:06:33', 'Sonia Marin Camacho', 'P'],
+  ['2026-09-20', '2026-09-20T14:02:20', 'Ruth Castillo Tienda', 'G'], ['2026-09-20', '2026-09-20T15:46:13', 'Nuria Via Clavero', 'G'],
+  ['2026-10-11', '2026-10-11T00:01:51', 'Sergio Rodríguez López', 'G'], ['2026-10-11', '2026-10-11T13:31:56', 'Ingrid Silé', 'G'],
+  ['2026-10-11', '2026-10-16T09:46:27', 'Raúl Mula Navarro', 'P'], ['2026-10-11', '2026-10-16T09:46:41', 'Alba Torrico García', 'P'],
+  ['2026-10-25', '2026-10-27T17:32:16', 'Raúl Mula Navarro', 'P'], ['2026-10-25', '2026-10-27T17:32:28', 'Alba Torrico García', 'P'],
+  ['2026-11-08', '2026-11-08T13:34:59', 'Mayte Santamaría Brull', 'G'], ['2026-11-08', '2026-11-08T13:36:15', 'Pau Toledo Bonell', 'G'],
+  ['2026-11-08', '2026-11-08T13:52:42', 'Brais Alfaya', 'P'], ['2026-11-08', '2026-11-08T14:43:43', 'Yolanda Gómez', 'P'],
+  ['2026-11-15', '2026-11-15T13:31:53', 'Sheila Barrionuevo', 'G'], ['2026-11-15', '2026-11-15T13:37:53', 'Pol Zaurin González', 'P'],
+  ['2026-11-15', '2026-11-15T14:03:50', 'Marta Martín', 'G'], ['2026-11-15', '2026-11-15T18:25:44', 'Nuria Via Clavero', 'P'],
+  ['2026-11-15', '2026-11-15T19:03:26', 'Alba Torrico García', 'P']
+];
+// Busca la ficha que ya existe: nombre igual, o una ficha más corta que coincide con el principio ("Pablo G" ↔ "Pablo Gómez")
+function fichaPara(nombre){
+  const n = normTxt(nombre), todos = Object.values(S.players);
+  const igual = todos.find(p => normTxt(p.nombre) === n); if (igual) return igual;
+  const cand = todos.filter(p => { const pn = normTxt(p.nombre); return pn.split(' ').length >= 2 && (n.startsWith(pn) || pn.startsWith(n)); });
+  return cand.sort((a, b) => b.nombre.length - a.nombre.length)[0] || null;
+}
+function planImport(){
+  const nombres = [...new Set(FORM_DATOS.map(x => x[2]))].sort((a, b) => a.localeCompare(b, 'es'));
+  const map = nombres.map(n => ({ n, p: fichaPara(n) }));
+  const fechas = [...new Set(FORM_DATOS.map(x => x[0]))];
+  const ya = FORM_DATOS.filter(x => { const j = S.jornadas.find(y => y.fecha === x[0] && y.circuitoId === 'matinales'); const f = map.find(m => m.n === x[2]).p; return j && f && S.resultados.some(r => r.jornadaId === j.id && r.playerId === f.id); }).length;
+  return { map, fechas, ya };
+}
+async function importarFormulario(){
+  const { map, fechas } = planImport();
+  if (!confirm(`¿Importar ${FORM_DATOS.length} resultados de ${fechas.length} domingos?`)) return;
+  try {
+    const b = writeBatch(db), pid = {};
+    map.forEach(m => {
+      if (m.p){ pid[m.n] = m.p.id; return; }
+      const ref = doc(collection(db, 'players')); pid[m.n] = ref.id;
+      b.set(ref, { nombre: m.n, uid: null, estado: 'activo', circuitos: [], creado: serverTimestamp() });
+      b.set(doc(db, 'privado', ref.id), { telefono: '', nivel: 2 });
+    });
+    let n = 0;
+    fechas.forEach(fecha => {
+      const ex = S.jornadas.find(y => y.fecha === fecha && y.circuitoId === 'matinales');
+      const jid = ex ? ex.id : 'imp_' + fecha, p = periodo('2m', fecha), tid = ex ? ex.temporadaId : `matinales_${p.key}`;
+      if (!ex) b.set(doc(db, 'jornadas', jid), { fecha, hora: '11:30', circuitoId: 'matinales', acceso: 'todos', amistosa: false, ultima: false, estado: 'cerrada',
+        temporadaId: tid, temporadaNombre: p.nombre, temporadaFin: p.fin, minPistas: 4, maxPistas: 8, rondas: 6, minRonda: 20, ajusteMin: 0,
+        finMs: new Date(fecha + 'T11:30').getTime() + 120 * 60000, importada: true, creada: serverTimestamp() });
+      FORM_DATOS.filter(x => x[0] === fecha).forEach(([, ts, nombre, r]) => {
+        const id = pid[nombre]; if (S.resultados.some(y => y.jornadaId === jid && y.playerId === id)) return;
+        const t = Timestamp.fromMillis(new Date(ts).getTime());
+        b.set(doc(db, 'jornadas', jid, 'inscritos', id), { parejaId: null, por: 'admin', ts: t });
+        b.set(doc(db, 'resultados', `${jid}_${id}`), { jornadaId: jid, temporadaId: tid, playerId: id, resultado: r === 'G' ? 'ganado' : 'perdido', estado: 'aprobado', por: 'admin', ts: t });
+        n++;
+      });
+    });
+    await b.commit(); S.modal = null; doRender(); toast(`✅ Importados ${n} resultados. Míralo en 🏆 Ranking`, 5000);
+  } catch (e){ toast(errMsg(e), 5000); }
+}
+
 /* ---------- RULETA DEL SORTEO ---------- */
 function abrirRuleta(jid){ S.rul = { jid, fase: 'listo' }; $('ruleta').classList.remove('hidden'); pintarRuleta(); }
 function pintarRuleta(){
@@ -1788,6 +1881,8 @@ const A = {
   waPistas: el => compartirPistasImg(S.jornadas.find(x => x.id === el.dataset.j)),
   waTop: el => compartir(msgRanking(el.dataset.c, el.dataset.t, 'puntos')),
   waRanking: el => compartir(msgRanking(S.rankCirc, S.rankTemp, el.dataset.m)),
+  modalImport: () => { S.modal = { t: 'importar' }; doRender(); },
+  importarForm: () => importarFormulario(),
   verAmericana: el => { S.ameJ = el.dataset.j; S.view = 'americana'; doRender(); window.scrollTo(0, 0); },
 
   fs(){ const n = (fsNivel() % 3) + 1; setFs(n); try { localStorage.setItem('fs', n); } catch (e){} doRender(); },
