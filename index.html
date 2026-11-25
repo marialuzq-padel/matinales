@@ -395,12 +395,13 @@ function calcRanking(resultados, jornadas, tid){
   const jk = {}; jornadas.forEach(j => jk[j.id] = jornadaKey(j));
   const st = {};
   resultados.forEach(r => {
-    if (!tid || r.estado !== 'aprobado' || (Array.isArray(tid) ? !tid.includes(r.temporadaId) : r.temporadaId !== tid)) return;
+    if (!tid || !['aprobado', 'pendiente'].includes(r.estado) || (Array.isArray(tid) ? !tid.includes(r.temporadaId) : r.temporadaId !== tid)) return;
     const s = st[r.playerId] || (st[r.playerId] = { pid: r.playerId, pts: 0, asist: 0, gan: 0, per: 0, porJ: {} });
-    s.pts += PTS[r.resultado] || 0;
+    const ok = r.estado === 'aprobado';   // pendiente de validar: ya cuenta la asistencia (+5), el +3/+1 cuando Luz lo valide
+    s.pts += ok ? (PTS[r.resultado] || 0) : PTS.asistencia;
     s.asist++;
-    if (r.resultado === 'ganado') s.gan++;
-    if (r.resultado === 'perdido') s.per++;
+    if (ok && r.resultado === 'ganado') s.gan++;
+    if (ok && r.resultado === 'perdido') s.per++;
     s.porJ[r.jornadaId] = tsMs(r.ts);
   });
   const cmpDesempate = (a, b) => {
@@ -500,7 +501,7 @@ const firebaseConfig = {
   messagingSenderId: "227155783201",
   appId: "1:227155783201:web:3794c516d8ec15a7a9bd60"
 };
-const VERSION = '21 nov · acumulado';   // ← cambia en cada subida para comprobar que el móvil tiene la última
+const VERSION = '26 nov · asistencias 2';   // ← cambia en cada subida para comprobar que el móvil tiene la última
 const ADMIN_EMAILS = ["marialuzq@gmail.com", "charoj@gmail.com"];  // ← deben coincidir con las reglas
 const NOTIFY_URL = "https://script.google.com/macros/s/AKfycbxk5_HE3P5C9fisqHIRppbbRP8o2Zt6HmB-KS5sK16p-qqIJW3klcqhLFB6LFxEZYg/exec";   // ← URL del Apps Script (aviso-app.gs) para avisos por email (vacío = sin email)
 const EMAIL_DOMINIO = "jugador.matinales-padel.app";
@@ -720,7 +721,7 @@ const onErr = e => { console.error(e); toast(errMsg(e), 4000); };
 onSnapshot(collection(db, 'players'), s => { S.players = {}; s.forEach(d => S.players[d.id] = { id: d.id, ...d.data() }); S.loaded.players = true; render(); }, onErr);
 onSnapshot(collection(db, 'circuitos'), s => { S.circuitos = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.orden || 9) - (b.orden || 9)); S.loaded.circuitos = true; migrar(); render(); }, onErr);
 onSnapshot(collection(db, 'temporadas'), s => { S.temporadasViejas = s.docs.map(d => ({ id: d.id, ...d.data() })); S.loaded.temporadas = true; migrar(); }, () => {});
-onSnapshot(collection(db, 'resultados'), s => { S.resultados = s.docs.map(d => ({ id: d.id, ...d.data() })); S.loaded.resultados = true; migrar(); render(); }, onErr);
+onSnapshot(collection(db, 'resultados'), s => { S.resultados = s.docs.map(d => ({ id: d.id, ...d.data() })); S.loaded.resultados = true; migrar(); autoCerrar(); render(); }, onErr);
 onSnapshot(collection(db, 'jornadas'), s => {
   S.jornadas = s.docs.map(d => ({ id: d.id, ...d.data() }));
   S.loaded.jornadas = true;
@@ -755,14 +756,31 @@ onAuthStateChanged(auth, u => {
 });
 
 /* ---------- CIERRE AUTOMÁTICO 48 h DESPUÉS DE TERMINAR ---------- */
-const autoCerradas = new Set();
+const autoCerradas = new Set(), asistHechas = new Set();
+const CORTE_ASIST = Date.parse('2026-11-23T00:00:00');   // las anteriores se corrigen con las listas de WhatsApp
 async function autoCerrar(){
-  if (!S.isAdmin || !S.loaded.jornadas) return;
+  if (!S.isAdmin || !S.loaded.jornadas || !S.loaded.resultados) return;
   const viejas = S.jornadas.filter(j => j.estado !== 'cerrada' && j.fecha && j.hora && Date.now() > plazoMs(j) && !autoCerradas.has(j.id));
-  if (!viejas.length) return;
   viejas.forEach(j => autoCerradas.add(j.id));
-  try { const b = writeBatch(db); viejas.forEach(j => b.update(doc(db, 'jornadas', j.id), { estado: 'cerrada', cerradaAuto: true })); await b.commit(); }
-  catch (e){ console.error(e); }
+  if (viejas.length){
+    try { const b = writeBatch(db); viejas.forEach(j => b.update(doc(db, 'jornadas', j.id), { estado: 'cerrada', cerradaAuto: true })); await b.commit(); }
+    catch (e){ console.error(e); }
+  }
+  // Asistencia automática: todos los de la lista definitiva reciben +5 al cerrarse
+  const sinAsist = S.jornadas.filter(j => (j.estado === 'cerrada' || viejas.includes(j)) && !j.asistAuto && !j.importada && !j.corrWA && cuentaParaRanking(j) && (j.finMs || 0) > CORTE_ASIST);
+  for (const j of sinAsist) await ponerAsistencias(j);
+}
+async function ponerAsistencias(j){
+  if (!S.isAdmin || !j || asistHechas.has(j.id) || !cuentaParaRanking(j)) return 0;
+  asistHechas.add(j.id);
+  try {
+    const ins = await getDocs(collection(db, 'jornadas', j.id, 'inscritos'));
+    const con = new Set(S.resultados.filter(r => r.jornadaId === j.id).map(r => r.playerId));
+    const b = writeBatch(db); let n = 0;
+    ins.forEach(d => { if (!con.has(d.id) && S.players[d.id]){ n++; b.set(doc(db, 'resultados', `${j.id}_${d.id}`), { jornadaId: j.id, temporadaId: j.temporadaId ?? null, playerId: d.id, resultado: 'asistencia', estado: 'aprobado', por: 'auto', ts: serverTimestamp() }); } });
+    b.update(doc(db, 'jornadas', j.id), { asistAuto: true });
+    await b.commit(); return n;
+  } catch (e){ console.error(e); asistHechas.delete(j.id); return 0; }
 }
 
 /* ---------- MIGRACIÓN (una sola vez, la hace una administradora) ---------- */
@@ -1374,6 +1392,8 @@ function renderAMas(){
     <button class="mi" data-act="modal" data-t="verComo"><i>👁️</i><span>Ver la app como un jugador<small>para hacer pruebas</small></span>›</button>
     <button class="mi" data-act="fs"><i>🔠</i><span>Tamaño de letra<small>Ahora: ${fsTxt} · toca para cambiar</small></span></button>
     ${S.jornadas.some(j => j.importada) ? '' : '<button class="mi" data-act="modalImport" style="border:2px solid #f5c542"><i>📥</i><span>Importar el ranking del formulario<small>Pasa a la app las respuestas de Google Forms</small></span>›</button>'}
+    ${S.jornadas.some(j => j.corrWA) ? '' : '<button class="mi" data-act="modal" data-t="corrWA" style="border:3px solid #f59e0b"><i>📋</i><span>Corregir asistencias con las listas<small>Domingos 6/09 al 22/11 · +5 a todos los que vinieron</small></span>›</button>'}
+    <button class="mi" data-act="waNormas"><i>📌</i><span>Enviar normas de resultados<small>Mensaje para el grupo de WhatsApp</small></span>›</button>
     <button class="mi" data-act="waApp"><i>📲</i><span>Compartir enlace de la app<small>por WhatsApp</small></span>›</button>
     <button class="mi" data-act="logout" style="color:var(--rose-strong)"><i>🚪</i><span>Cerrar sesión<small>${esc(S.user?.email || '')}</small></span></button>
     <p class="muted center" style="margin-top:14px">Versión de la app: <b>${VERSION}</b></p>`;
@@ -1496,6 +1516,10 @@ function renderModal(){
       <div id="ed-circs"></div>
       <button class="cta" data-act="guardarJug" data-p="${p.id}">💾 Guardar</button>
       <div class="row"><button class="btn sm" style="background:var(--lav);color:var(--lav-strong)" data-act="verComo" data-p="${p.id}">👁️ Ver app como ${esc(p.nombre.split(' ')[0])}</button><button class="btn sm sec" data-act="toggleBaja" data-p="${p.id}">${p.estado === 'baja' ? 'Dar de alta otra vez' : 'Dar de baja'}</button></div>
+      <details style="margin-top:12px"><summary style="font-weight:800">🔗 ¿Está repetido? Unir con otra ficha</summary>
+        <p class="muted small" style="margin-top:6px">Elige la ficha repetida: sus resultados y asistencias pasan a <b>${esc(p.nombre)}</b> y la repetida desaparece.</p>
+        <select id="ed-unir"><option value="">— Ficha repetida —</option>${Object.values(S.players).filter(x => x.id !== p.id).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')).map(x => `<option value="${x.id}">${esc(x.nombre)}</option>`).join('')}</select>
+        <button class="btn rose" data-act="unirFichas" data-p="${p.id}">🔗 Unir en ${esc(p.nombre.split(' ')[0])}</button></details>
       <button class="btn sec" data-act="cerrarModal">Cancelar</button>`;
   } else if (M.t === 'nuevoJug'){
     h = `<h2>＋ Añadir jugador</h2>
@@ -1513,6 +1537,19 @@ function renderModal(){
       <p class="muted small">${nuevos} ficha${nuevos === 1 ? '' : 's'} nueva${nuevos === 1 ? '' : 's'}. Si alguna no cuadra, corrige antes el nombre en 👥 Jugadores y vuelve aquí.</p>
       ${pl.ya ? `<p class="warn">${pl.ya} resultados ya estaban en la app y no se repetirán.</p>` : ''}
       <button class="cta" data-act="importarForm">📥 Importar ahora</button><button class="btn sec" data-act="cerrarModal">Cancelar</button>`;
+  } else if (M.t === 'corrWA'){
+    const { map } = planCorr(), jug = Object.values(S.players).filter(p => !p.unidoA).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+    const opts = v => `<option value="nueva"${v === 'nueva' ? ' selected' : ''}>➕ Ficha nueva</option>` + jug.map(p => `<option value="${p.id}"${p.id === v ? ' selected' : ''}>${esc(p.nombre)}</option>`).join('');
+    const fila = m => `<div class="pl2" style="display:block"><div class="nm">${esc(m.n)}${m.pistas.length ? `<small style="color:var(--peach-strong)">¿Será ${m.pistas.map(esc).join(' o ')}?</small>` : ''}</div><select class="cw-sel" data-n="${esc(m.n)}" style="margin-top:4px">${opts(m.v)}</select></div>`;
+    const nuevas = map.filter(m => !m.f), parec = map.filter(m => m.f && !m.f.exacta), exact = map.filter(m => m.f?.exacta);
+    const fechas = corrFechas().map(f => `<b>${new Date(f + 'T12:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</b> ${CORR_WA[f].length}`).join(' · ');
+    h = `<h2>📋 Asistencia real (listas de WhatsApp)</h2>
+      <p class="muted">${fechas}</p>
+      <p style="margin-top:8px">Todos los de cada lista reciben <b>+5</b>. Si ya apuntaron Ganado/Perdido, se respeta. Nour pasa del 13/09 al 6/09.</p>
+      ${nuevas.length ? `<h3 style="margin-top:14px">➕ Fichas nuevas (${nuevas.length})</h3><p class="muted small">Si alguno ya existe con otro nombre, elígelo en la lista.</p><div class="card" style="padding:4px 12px">${nuevas.map(fila).join('')}</div>` : ''}
+      ${parec.length ? `<h3 style="margin-top:14px">🔎 Revisa estos (${parec.length})</h3><div class="card" style="padding:4px 12px">${parec.map(fila).join('')}</div>` : ''}
+      <details style="margin-top:14px"><summary style="font-weight:800">✅ Ya existen con el mismo nombre (${exact.length})</summary><div class="card" style="padding:4px 12px">${exact.map(fila).join('')}</div></details>
+      <button class="cta" data-act="corregirWA">💾 Grabar asistencias</button><button class="btn sec" data-act="cerrarModal">Cancelar</button>`;
   } else if (M.t === 'verComo'){
     h = `<h2>👁️ Ver la app como un jugador</h2><p class="muted">Verás exactamente lo que ve él. Lo que hagas se guarda de verdad a su nombre.</p>
       <select id="ver-como"><option value="">— Elige jugador —</option>${jugadoresActivos().map(p => `<option value="${p.id}">${esc(p.nombre)}</option>`).join('')}</select>
@@ -1543,7 +1580,8 @@ function renderSheet(){
   const k = S.sheet.jid + S.sheet.step;
   if (S.sheet.step === 'lista'){
     if (box.dataset.k !== k){
-      box.innerHTML = `<div class="sh"><h2>🏁 ¡Americana terminada!</h2><div class="sub">${esc(jLabel(j))}<br>Busca tu nombre y apunta tu <b>último partido</b></div><span class="plazo" style="margin-bottom:10px">${plazoTxt(j)}</span>
+      box.innerHTML = `<div class="sh"><h2>🏁 ¡Americana terminada!</h2><div class="sub">${esc(jLabel(j))}</div>
+        <div style="background:var(--lav);color:var(--lav-strong);border-radius:14px;padding:10px 12px;margin:8px 0;font-weight:800;line-height:1.5">👤 Busca <u>TU</u> nombre (no el de tu pareja)<br>🎾 Solo el <u>ÚLTIMO</u> partido<br>👥 Los 2 de la pareja lo apuntáis<br>✅ Los +5 por venir los tienes igualmente</div><span class="plazo" style="margin-bottom:10px">${plazoTxt(j)}</span>
         <input id="sheet-q" placeholder="🔍 Buscar mi nombre…" autocomplete="off" style="margin-bottom:6px"><div id="sheet-list"></div>
         <button class="btn sec" data-act="cerrarHoja">Cerrar</button></div>`;
       box.dataset.k = k;
@@ -1771,6 +1809,137 @@ async function importarFormulario(){
   } catch (e){ toast(errMsg(e), 5000); }
 }
 
+/* ---------- CORRECCIÓN DE ASISTENCIAS CON LAS LISTAS DE WHATSAPP (una sola vez) ---------- */
+// Cada domingo: nombres tal cual en la lista definitiva. [nombreLista, ficha] cuando la ficha se llama distinto.
+const CORR_WA = {"2026-09-06": [["Yolanda G", "Yolanda Gómez"], ["Alejandro C", "Alejandro Caldentey"], ["Alba T", "Alba Torrico García"], "Marc G", ["Rubén G", "Ruben González López"], ["Camilo", "Camilo Postius Conde"], ["Adolf", "Adolf Sayol"], ["Raúl T", "Raúl Mula Navarro"], "Freddy", ["Nour", "Nour Chams"], "Dani", ["Lucas", "Lucas Fernández Herrera"], "Jessi", ["Ruth", "Ruth Castillo Tienda"], ["Mariluz", "María Luz Cervero"], "Maria Carro", ["Ester R", "Esther R"], ["Ginés", "Ginés Segura"], "Brayant", ["Javi", "Francisco Javier González Rodríguez"]], "2026-09-13": [["Yolanda G", "Yolanda Gómez"], ["Alba T", "Alba Torrico García"], ["Raul M", "Raúl Mula Navarro"], ["Sheila B", "Sheila Barrionuevo"], ["Aida R", "Aida Ruiz"], ["Adolf", "Adolf Sayol"], ["Camilo", "Camilo Postius Conde"], "Alex P", ["Alba Ll", "Alba Llobet"], "Sergio M", "Eva F.", "Manel C", ["Jordi H", "Jordi Herranz"], "Marc G", ["Rubén G", "Ruben González López"], ["Pablo G", "Pablo Gómez"], ["Sonia M", "Sonia Marin Camacho"], ["Javi", "Francisco Javier González Rodríguez"], ["Aroa", "Aroa Albert"], "Laura", ["Ester P", "Ester Pericas"], ["Núria L", "Núria López Roig"], "Rogeli", ["Alejandro C", "Alejandro Caldentey"]], "2026-09-20": ["Manel C", ["Adolf", "Adolf Sayol"], ["Alba T", "Alba Torrico García"], ["Javi", "Francisco Javier González Rodríguez"], "Alicia", ["Nuria", "Nuria Via Clavero"], ["Ruth", "Ruth Castillo Tienda"], "Salva", ["María", "Maria Carro"], ["Alejandro C.", "Alejandro Caldentey"], ["Ginés", "Ginés Segura"], "Brayant", "Hugo G", "Héctor G", "Jordi", "Laura"], "2026-10-11": ["Iván T", ["Raul M", "Raúl Mula Navarro"], "Esther R", ["Alba T", "Alba Torrico García"], "Ana ortiz", "Jaume", "Campa", "Ana J", "Emili B", ["Gines", "Ginés Segura"], ["Bryant", "Brayant"], ["Ingrid", "Ingrid Silé"], "Carol", "Manel C", "Sergio M", ["Eva M.", "Eva F."], "Alex P", ["Alba Ll", "Alba Llobet"], ["Sergio R", "Sergio Rodríguez López"], "Óscar R"], "2026-10-25": [["Francisco G", "Francisco Giménez"], ["Daniel G", "Daniel Giménez"], ["Marta", "Marta Martín"], "Ricard", "José V", "Josep", "Isabel", "Rogeli", "Natalia", "Bjorn", "Elu", "Eva", "Nati", "Dani", ["Alba Tf", "Alba Torrico García"], ["Raúl M", "Raúl Mula Navarro"], ["Sergio M.", "Sergio M"], "Eva F.", ["Adolf", "Adolf Sayol"], ["Alejandro C", "Alejandro Caldentey"]], "2026-11-08": [["Yolanda G", "Yolanda Gómez"], "Ana ortiz", "Ana J", ["Camilo", "Camilo Postius Conde"], "Nuria M", "Selu", ["Sergio M.", "Sergio M"], "Eva F.", "Esther R", ["Rubén G", "Ruben González López"], "Marc G", ["Alba Ll", "Alba Llobet"], ["Alex p", "Alex P"], ["Mariluz", "María Luz Cervero"], ["Laura V", "Laura Vélez"], "Nuria G", ["Javi G", "Francisco Javier González Rodríguez"], ["Brais", "Brais Alfaya"], ["Mayte", "Mayte Santamaría Brull"], "Manel C", "Carlos C", ["Pau T", "Pau Toledo Bonell"], "Carlos L", "Juanjo L"], "2026-11-15": [["Yolanda G", "Yolanda Gómez"], ["Alba T", "Alba Torrico García"], "Lupe", "Iván T", ["Sheila", "Sheila Barrionuevo"], "Sara Caro", ["Aroa", "Aroa Albert"], ["Albert", "Albert Aroa"], ["Ginés P", "Ginés P (padre)"], ["Ginés H", "Ginés Segura"], "Marc R", "Manel C", ["Ruben G", "Ruben González López"], ["Pablo G", "Pablo Gómez"], "Lluc", ["Pol", "Pol Zaurin González"], ["Nuria", "Nuria Via Clavero"], ["javi", "Javi Sánchez"], ["Mariluz", "María Luz Cervero"], ["Marta M", "Marta Martín"]], "2026-11-22": ["Eva F.", ["Sergio M.", "Sergio M"], ["Alejandro C", "Alejandro Caldentey"], ["Alba T", "Alba Torrico García"], ["Sheila", "Sheila Barrionuevo"], "Aida Ruiz", "Jordi Ruiz", "Charo", "Javi O", "Martí O", "Albert V", "Manel C", ["Brais", "Brais Alfaya"], "Ainhoa T", "Alberto", "Alberto J", "Susana", ["Gines", "Ginés Segura"], ["Brayan", "Brayant"], "Ángel B"]};
+const corrFechas = () => Object.keys(CORR_WA).sort();
+const corrCanon = x => Array.isArray(x) ? x[1] : x;
+const corrLista = x => Array.isArray(x) ? x[0] : x;
+// Ficha que ya existe: nombre igual, o (si los dos tienen 2+ palabras) uno empieza como el otro: "Marc G" ↔ "Marc García"
+function fichaCorr(nombre){
+  const n = normTxt(nombre), todos = Object.values(S.players).filter(p => !p.unidoA);
+  const igual = todos.find(p => normTxt(p.nombre) === n); if (igual) return { p: igual, exacta: true };
+  if (n.split(' ').length < 2) return null;
+  const cand = todos.filter(p => { const pn = normTxt(p.nombre); return pn.split(' ').length >= 2 && (n.startsWith(pn) || pn.startsWith(n)); });
+  const p = cand.sort((a, b) => b.nombre.length - a.nombre.length)[0]; return p ? { p, exacta: false } : null;
+}
+const pistaCorr = nombre => { const w = normTxt(nombre).split(' ')[0], canon = new Set(Object.values(CORR_WA).flat().map(x => normTxt(corrCanon(x)))); return Object.values(S.players).filter(p => !p.unidoA && normTxt(p.nombre).split(' ')[0] === w && !canon.has(normTxt(p.nombre))).map(p => p.nombre); };
+function planCorr(){
+  const canon = [...new Set(Object.values(CORR_WA).flat().map(corrCanon))].sort((a, b) => a.localeCompare(b, 'es'));
+  const sel = S.modal?.corrSel || {};
+  const map = canon.map(n => { const f = fichaCorr(n); const v = sel[n] ?? (f ? f.p.id : 'nueva'); return { n, f, v, pistas: f ? [] : pistaCorr(n) }; });
+  return { canon, map };
+}
+const jCorr = fecha => S.jornadas.find(y => y.fecha === fecha && y.circuitoId === 'matinales' && !y.amistosa);
+async function corregirWA(){
+  const { map } = planCorr();
+  const nuevas = map.filter(m => m.v === 'nueva').length;
+  if (!confirm(`¿Grabar la asistencia real de ${corrFechas().length} domingos?\n${nuevas} fichas nuevas. Los que no apuntaron resultado reciben +5.`)) return;
+  const ops = [], pid = {};
+  map.forEach(m => {
+    if (m.v !== 'nueva'){ pid[m.n] = m.v; return; }
+    const ref = doc(collection(db, 'players')); pid[m.n] = ref.id;
+    ops.push(['set', ref, { nombre: m.n, uid: null, estado: 'activo', circuitos: [], creado: serverTimestamp() }]);
+    ops.push(['set', doc(db, 'privado', ref.id), { telefono: '', nivel: 2 }]);
+  });
+  const jid = {}, ins = {};
+  for (const fecha of corrFechas()){
+    const ex = jCorr(fecha), p = periodo('2m', fecha);
+    jid[fecha] = ex ? ex.id : 'imp_' + fecha;
+    if (!ex) ops.push(['set', doc(db, 'jornadas', jid[fecha]), { fecha, hora: '11:30', circuitoId: 'matinales', acceso: 'todos', amistosa: false, ultima: false, estado: 'cerrada',
+      temporadaId: `matinales_${p.key}`, temporadaNombre: p.nombre, temporadaFin: p.fin, minPistas: 4, maxPistas: 8, rondas: 6, minRonda: 20, ajusteMin: 0,
+      finMs: new Date(fecha + 'T11:30').getTime() + 120 * 60000, importada: true, creada: serverTimestamp() }]);
+    ins[fecha] = ex ? new Set((await getDocs(collection(db, 'jornadas', ex.id, 'inscritos'))).docs.map(d => d.id)) : new Set();
+  }
+  const tidDe = fecha => jCorr(fecha)?.temporadaId || `matinales_${periodo('2m', fecha).key}`;
+  const tieneRes = new Set(S.resultados.map(r => r.jornadaId + '_' + r.playerId));
+  // Nour vino el 6/09: su resultado apuntado el 13/09 pasa al 6/09
+  const nour = pid['Nour Chams'], r13 = nour && S.resultados.find(r => r.jornadaId === jid['2026-09-13'] && r.playerId === nour);
+  if (r13 && !tieneRes.has(jid['2026-09-06'] + '_' + nour)){
+    ops.push(['set', doc(db, 'resultados', `${jid['2026-09-06']}_${nour}`), { ...Object.fromEntries(Object.entries(r13).filter(([k]) => k !== 'id')), jornadaId: jid['2026-09-06'], temporadaId: tidDe('2026-09-06') }]);
+    ops.push(['del', doc(db, 'resultados', r13.id)]); ops.push(['del', doc(db, 'jornadas', jid['2026-09-13'], 'inscritos', nour)]);
+    tieneRes.add(jid['2026-09-06'] + '_' + nour); tieneRes.delete(r13.id);
+  }
+  let n = 0;
+  corrFechas().forEach(fecha => {
+    const J = jid[fecha], fin = Timestamp.fromMillis(new Date(fecha + 'T11:30').getTime() + 120 * 60000 + 48 * 3600000), t0 = Timestamp.fromMillis(new Date(fecha + 'T10:00').getTime());
+    new Set(CORR_WA[fecha].map(x => pid[corrCanon(x)])).forEach(id => {
+      if (!ins[fecha].has(id)) ops.push(['set', doc(db, 'jornadas', J, 'inscritos', id), { parejaId: null, por: 'admin', ts: t0 }]);
+      if (!tieneRes.has(J + '_' + id)){ n++; ops.push(['set', doc(db, 'resultados', `${J}_${id}`), { jornadaId: J, temporadaId: tidDe(fecha), playerId: id, resultado: 'asistencia', estado: 'aprobado', por: 'admin', ts: fin }]); }
+    });
+    ops.push([jCorr(fecha) ? 'upd' : 'merge', doc(db, 'jornadas', J), { corrWA: true, asistAuto: true }]);
+  });
+  try {
+    for (let i = 0; i < ops.length; i += 400){
+      const b = writeBatch(db);
+      ops.slice(i, i + 400).forEach(([t, ref, d]) => t === 'set' ? b.set(ref, d) : t === 'merge' ? b.set(ref, d, { merge: true }) : t === 'upd' ? b.update(ref, d) : b.delete(ref));
+      await b.commit();
+    }
+    S.modal = null; doRender(); toast(`✅ ${n} asistencias añadidas. Míralo en 🏆 Ranking → 📊 Acumulado`, 6000);
+  } catch (e){ toast(errMsg(e), 6000); }
+}
+
+/* ---------- UNIR DOS FICHAS DE LA MISMA PERSONA ---------- */
+async function unirFichas(dst, src){
+  const D = S.players[dst], O = S.players[src]; if (!D || !O || dst === src) return;
+  if (!confirm(`¿Unir "${O.nombre}" dentro de "${D.nombre}"?\nTodos sus resultados y asistencias pasan a ${D.nombre} y la ficha "${O.nombre}" desaparece.`)) return;
+  const ops = [], val = r => r.resultado === 'asistencia' ? 0 : r.estado === 'aprobado' ? 2 : 1;
+  S.resultados.filter(r => r.playerId === src).forEach(r => {
+    const otro = S.resultados.find(x => x.jornadaId === r.jornadaId && x.playerId === dst);
+    if (!otro || val(r) > val(otro)){
+      const { id, ...d } = r; ops.push(['set', doc(db, 'resultados', `${r.jornadaId}_${dst}`), { ...d, playerId: dst }]);
+      if (otro && otro.id !== `${r.jornadaId}_${dst}`) ops.push(['del', doc(db, 'resultados', otro.id)]);
+    }
+    ops.push(['del', doc(db, 'resultados', r.id)]);
+  });
+  for (const j of S.jornadas){
+    const ds = (await getDocs(collection(db, 'jornadas', j.id, 'inscritos'))).docs;
+    const o = ds.find(d => d.id === src);
+    if (o){ if (!ds.some(d => d.id === dst)) ops.push(['set', doc(db, 'jornadas', j.id, 'inscritos', dst), { ...o.data(), parejaId: o.data().parejaId === dst ? null : o.data().parejaId }]); ops.push(['del', o.ref]); }
+    ds.filter(d => d.data().parejaId === src && d.id !== src).forEach(d => ops.push(['upd', d.ref, { parejaId: d.id === dst ? null : dst }]));
+    const cambios = {};
+    Object.entries(j).forEach(([k, v]) => { if (k !== 'id' && v && typeof v === 'object' && !(v.toMillis) && JSON.stringify(v).includes(src)) cambios[k] = JSON.parse(JSON.stringify(v).split(src).join(dst)); });
+    if (Object.keys(cambios).length) ops.push(['upd', doc(db, 'jornadas', j.id), cambios]);
+  }
+  S.bajas.filter(b => b.playerId === src).forEach(b => ops.push(['upd', doc(db, 'bajas', b.id), { playerId: dst }]));
+  const upd = { circuitos: [...new Set([...(D.circuitos || []), ...(O.circuitos || [])])] };
+  if (!D.uid && O.uid) upd.uid = O.uid;
+  ops.push(['upd', doc(db, 'players', dst), upd]);
+  if (!S.priv[dst]?.telefono && S.priv[src]?.telefono) ops.push(['merge', doc(db, 'privado', dst), { telefono: S.priv[src].telefono }]);
+  ops.push(['del', doc(db, 'players', src)]); ops.push(['del', doc(db, 'privado', src)]);
+  try {
+    for (let i = 0; i < ops.length; i += 400){
+      const b = writeBatch(db);
+      ops.slice(i, i + 400).forEach(([t, ref, d]) => t === 'set' ? b.set(ref, d) : t === 'merge' ? b.set(ref, d, { merge: true }) : t === 'upd' ? b.update(ref, d) : b.delete(ref));
+      await b.commit();
+    }
+    S.modal = { t: 'jug', p: dst, v: Date.now() }; doRender(); toast(`✅ "${O.nombre}" unido a ${D.nombre}`, 4000);
+  } catch (e){ toast(errMsg(e), 6000); }
+}
+
+const MSG_NORMAS = `🎾 *CÓMO APUNTAR EL RESULTADO EN LAS MATINALES* 🎾
+
+Al acabar la americana, abrid la app y os saldrá la lista de jugadores:
+
+1️⃣ Busca *TU nombre* (solo el tuyo, no el de tu pareja ni el de nadie más)
+2️⃣ Pulsa *HE GANADO* o *HE PERDIDO*
+3️⃣ ¡Listo! ✅
+
+📌 *Importante:*
+• Solo cuenta el *ÚLTIMO PARTIDO* (el de las 13:10 h)
+• *Cada uno apunta el suyo*: los 2 de la pareja tenéis que apuntarlo
+• Tenéis *48 horas*. Después la lista se cierra
+• Quien lo apunta antes gana los empates del ranking ⏱
+
+🏅 *Puntos:*
+• Por venir: *+5* (te lo pongo yo, aunque no apuntes nada)
+• Último partido ganado: *+3*
+• Último partido perdido: *+1*
+
+Si te equivocas, avísame y lo corrijo 😉
+
+👉 ` ;
+
 /* ---------- RULETA DEL SORTEO ---------- */
 function abrirRuleta(jid){ S.rul = { jid, fase: 'listo' }; $('ruleta').classList.remove('hidden'); pintarRuleta(); }
 function pintarRuleta(){
@@ -1882,6 +2051,9 @@ const A = {
   waTop: el => compartir(msgRanking(el.dataset.c, el.dataset.t, 'puntos')),
   waRanking: el => compartir(msgRanking(S.rankCirc, S.rankTemp, el.dataset.m)),
   modalImport: () => { S.modal = { t: 'importar' }; doRender(); },
+  corregirWA(){ const sel = {}; document.querySelectorAll('.cw-sel').forEach(x => sel[x.dataset.n] = x.value); S.modal.corrSel = sel; return corregirWA(); },
+  unirFichas(el){ const o = $('ed-unir').value; if (!o) return toast('Elige la ficha repetida'); return unirFichas(el.dataset.p, o); },
+  waNormas: () => compartir(MSG_NORMAS + APP_URL),
   importarForm: () => importarFormulario(),
   verAmericana: el => { S.ameJ = el.dataset.j; S.view = 'americana'; doRender(); window.scrollTo(0, 0); },
 
@@ -1985,6 +2157,7 @@ const A = {
       await updateDoc(doc(db, 'jornadas', S.admJ), { estado: el.dataset.e });
       if (el.dataset.e === 'resultados') toast('Lista de resultados abierta para todos 🏁', 3500);
       if (S.modal?.t === 'ajustes'){ S.modal.v++; }
+      if (el.dataset.e === 'cerrada' && cuentaParaRanking(j) && (j.finMs || Date.now()) > CORTE_ASIST){ const n = await ponerAsistencias(j); if (n) toast(`✅ +5 de asistencia para ${n} que no apuntaron resultado`, 3500); }
       if (el.dataset.e === 'cerrada' && usaLista(j)){ S.detTab = 'resultados'; S.lista = null; S.modal = null; doRender(); toast('Ahora pasa lista para guardar la asistencia 📋', 3500); }
       if (el.dataset.e === 'resultados'){ S.detTab = 'resultados'; doRender(); }
     } catch (e){ toast(errMsg(e)); }
@@ -2064,7 +2237,13 @@ const A = {
     try { const b = writeBatch(db); pend.forEach(r => b.update(doc(db, 'resultados', r.id), { estado: 'aprobado' })); await b.commit(); toast(`${pend.length} resultados validados`); }
     catch (e){ toast(errMsg(e)); }
   },
-  async borrarRes(el){ if (!confirm('¿Borrar este resultado? El jugador podrá volver a enviarlo.')) return; try { await deleteDoc(doc(db, 'resultados', el.dataset.id)); } catch (e){ toast(errMsg(e)); } },
+  async borrarRes(el){
+    const r = S.resultados.find(x => x.id === el.dataset.id), j = r && S.jornadas.find(x => x.id === r.jornadaId);
+    if (j && j.estado === 'cerrada' && cuentaParaRanking(j) && r.resultado !== 'asistencia'){
+      if (!confirm('¿Quitar el Ganado/Perdido? Se quedará solo con la asistencia (+5).')) return;
+      try { await updateDoc(doc(db, 'resultados', r.id), { resultado: 'asistencia', estado: 'aprobado' }); } catch (e){ toast(errMsg(e)); } return;
+    }
+    if (!confirm('¿Borrar este resultado? El jugador podrá volver a enviarlo.')) return; try { await deleteDoc(doc(db, 'resultados', el.dataset.id)); } catch (e){ toast(errMsg(e)); } },
   async adminRes(el){ await ponerResAdmin(el.dataset.p, el.dataset.r); },
   async adminResultadoLibre(el){ const pid = $('ar-jug').value; if (!pid) return toast('Elige un jugador'); await ponerResAdmin(pid, el.dataset.r); S.modal = null; doRender(); },
   async guardarLista(){
