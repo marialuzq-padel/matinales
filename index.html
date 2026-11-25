@@ -274,7 +274,7 @@ details.more summary{font-weight:800;color:var(--primary);cursor:pointer}
       <div class="seg wrap" id="rank-circs"></div>
       <div class="seg" id="rank-modes">
         <button data-act="rankMode" data-v="puntos" id="seg-puntos" class="on">🏆 Puntos</button>
-        <button data-act="rankMode" data-v="asistencia" id="seg-asistencia">📅 Asistencia</button>
+        <button data-act="rankMode" data-v="asistencia" id="seg-asistencia">🏅 Constancia</button>
       </div>
       <select id="rank-temp"></select>
       <div id="rank-info" class="muted small" style="margin:8px 0"></div>
@@ -360,8 +360,8 @@ details.more summary{font-weight:800;color:var(--primary);cursor:pointer}
 
 <!-- ================= LÓGICA PURA (sin Firebase) ================= -->
 <script id="logic">
-const PTS = { ganado: 8, perdido: 6, asistencia: 5 };   // 5 asistir + 3 ganado / +1 perdido
-const MAX_PTS_JORNADA = 8;
+const PTS = { ganado: 7, perdido: 6, asistencia: 5 };   // 5 asistir + 2 ganado / +1 perdido
+const MAX_PTS_JORNADA = 7;
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
 function tsMs(t){
@@ -397,7 +397,7 @@ function calcRanking(resultados, jornadas, tid){
   resultados.forEach(r => {
     if (!tid || !['aprobado', 'pendiente'].includes(r.estado) || (Array.isArray(tid) ? !tid.includes(r.temporadaId) : r.temporadaId !== tid)) return;
     const s = st[r.playerId] || (st[r.playerId] = { pid: r.playerId, pts: 0, asist: 0, gan: 0, per: 0, porJ: {} });
-    const ok = r.estado === 'aprobado';   // pendiente de validar: ya cuenta la asistencia (+5), el +3/+1 cuando Luz lo valide
+    const ok = r.estado === 'aprobado';   // pendiente de validar: ya cuenta la asistencia (+5), el +2/+1 cuando Luz lo valide
     s.pts += ok ? (PTS[r.resultado] || 0) : PTS.asistencia;
     s.asist++;
     if (ok && r.resultado === 'ganado') s.gan++;
@@ -501,7 +501,7 @@ const firebaseConfig = {
   messagingSenderId: "227155783201",
   appId: "1:227155783201:web:3794c516d8ec15a7a9bd60"
 };
-const VERSION = '26 nov · asistencias 2';   // ← cambia en cada subida para comprobar que el móvil tiene la última
+const VERSION = '26 nov · parejas';   // ← cambia en cada subida para comprobar que el móvil tiene la última
 const ADMIN_EMAILS = ["marialuzq@gmail.com", "charoj@gmail.com"];  // ← deben coincidir con las reglas
 const NOTIFY_URL = "https://script.google.com/macros/s/AKfycbxk5_HE3P5C9fisqHIRppbbRP8o2Zt6HmB-KS5sK16p-qqIJW3klcqhLFB6LFxEZYg/exec";   // ← URL del Apps Script (aviso-app.gs) para avisos por email (vacío = sin email)
 const EMAIL_DOMINIO = "jugador.matinales-padel.app";
@@ -521,7 +521,7 @@ const db = getFirestore(app);
 /* ---------- ESTADO ---------- */
 const S = {
   user: null, isAdmin: false,
-  players: {}, priv: {}, solicitudes: [], miSolicitud: undefined, bajas: [],
+  players: {}, priv: {}, solicitudes: [], miSolicitud: undefined, bajas: [], conflictos: [],
   circuitos: [], temporadasViejas: [], jornadas: [], resultados: [], inscritos: {},
   view: 'inicio', admDet: null, detTab: 'apuntados', modal: null, rankMode: 'puntos', rankCirc: null, rankTemp: null, ameJ: null,
   admJ: null, draft: null, sel: null, editPid: null, asPid: null, sust: null, lista: null, editCirc: null,
@@ -708,10 +708,10 @@ function msgRanking(cid, tid, modo){
   const c = circ(cid), rk = calcRanking(S.resultados, S.jornadas, tidsRank(cid, tid));
   const lista = modo === 'puntos' ? rk.porPuntos : rk.porAsistencia;
   const tn = nombreRank(cid, tid);
-  let t = `🏆 *RANKING ${c.nombre.toUpperCase()}${modo === 'asistencia' ? ' · ASISTENCIA' : ''}* · ${tn}\n\n`;
+  let t = `${modo === 'asistencia' ? '🏅' : '🏆'} *RANKING ${c.nombre.toUpperCase()}${modo === 'asistencia' ? ' · CONSTANCIA' : ''}* · ${tn}\n\n`;
   t += lista.slice(0, 5).map(s => { const pos = modo === 'puntos' ? s.pos : s.posA; return `${pos <= 3 ? ['🥇', '🥈', '🥉'][pos - 1] : pos + '.'} ${nom(s.pid)} — ${modo === 'puntos' ? s.pts + ' pts' : s.asist + ' americana' + (s.asist === 1 ? '' : 's')}`; }).join('\n');
   const ult = jornadasOrd().find(j => j.ultima && j.estado !== 'cerrada' && j.temporadaId === tid);
-  if (ult) t += `\n\n🏁 La americana del *${fmtFecha(ult, false)}* es la ÚLTIMA de la temporada. Una victoria da 8 puntos: ¡todo puede cambiar! 🔥`;
+  if (ult) t += `\n\n🏁 La americana del *${fmtFecha(ult, false)}* es la ÚLTIMA de la temporada. Una victoria da ${PTS.ganado} puntos: ¡todo puede cambiar! 🔥`;
   if (lista.length > 5) t += `\n… y ${lista.length - 5} más`;
   return t + '\n\n👉 Ranking completo en vivo: ' + APP_URL;
 }
@@ -742,11 +742,12 @@ onAuthStateChanged(auth, u => {
   S.isAdmin = !!u && ADMIN_EMAILS.includes((u.email || '').toLowerCase());
   adminUnsubs.forEach(f => f()); adminUnsubs = [];
   if (solUnsub){ solUnsub(); solUnsub = null; }
-  S.priv = {}; S.solicitudes = []; S.bajas = []; S.miSolicitud = undefined;
+  S.priv = {}; S.solicitudes = []; S.bajas = []; S.miSolicitud = undefined; S.conflictos = [];
   if (S.isAdmin){
     adminUnsubs.push(onSnapshot(collection(db, 'privado'), s => { S.priv = {}; s.forEach(d => S.priv[d.id] = d.data()); render(); }, onErr));
     adminUnsubs.push(onSnapshot(collection(db, 'solicitudes'), s => { S.solicitudes = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); }, onErr));
     adminUnsubs.push(onSnapshot(collection(db, 'avisos'), s => { S.avisos = new Set(s.docs.map(d => d.id)); if (S.rul?.fase === 'gana') pintarRuleta(); render(); }, () => {}));
+    adminUnsubs.push(onSnapshot(collection(db, 'conflictos'), s => { S.conflictos = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); }, () => {}));
     adminUnsubs.push(onSnapshot(collection(db, 'bajas'), s => { S.bajas = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => tsMs(b.ts) - tsMs(a.ts)); render(); }, onErr));
   } else if (u){
     solUnsub = onSnapshot(doc(db, 'solicitudes', u.uid), d => { S.miSolicitud = d.exists() ? d.data() : null; render(); }, () => {});
@@ -973,6 +974,7 @@ function rankRow(s, modo, m, tid){
   const cls = (pos <= 3 ? ' p' + pos : '') + (m && m.id === s.pid ? ' me' : '');
   const conPuntos = modo === 'puntos';
   let sub = conPuntos ? `${s.asist} asist. · ${s.gan}G ${s.per}P` : `${s.asist} americana${s.asist === 1 ? '' : 's'}`;
+  if (!conPuntos && s.pos <= 3 && circ(S.rankCirc)?.tipoRanking === 'puntos') sub += ` · <span class="chip peach">🏆 ${s.pos}º en puntos</span>`;
   const ult = S.jornadas.some(j => j.ultima && j.estado !== 'cerrada' && j.temporadaId === tid);
   if (conPuntos && s.empateGanado) sub += ' · <span class="chip lav">desempate: envió antes</span>';
   if (conPuntos && ult && s.distAnterior != null && s.distAnterior <= MAX_PTS_JORNADA) sub += ` · <span class="chip peach">a ${s.distAnterior} del anterior</span>`;
@@ -1013,8 +1015,8 @@ function renderRanking(){
   const lista = modo === 'puntos' ? rk.porPuntos : rk.porAsistencia;
   const pend = S.resultados.filter(r => (acum ? tids.includes(r.temporadaId) : r.temporadaId === tids) && r.estado === 'pendiente').length;
   $('rank-info').innerHTML = (acum ? '<b>📊 Suma de todos los bimestres del curso.</b> ' : '') + (modo === 'puntos'
-    ? 'Asistir +5 · Último partido ganado +3 / perdido +1. Empate: gana quien envió antes su resultado.'
-    : 'Americanas jugadas en la temporada. ¡Premio a quien más venga!') +
+    ? 'Asistir +5 · Último partido ganado +2 / perdido +1. Empate: gana quien envió antes su resultado.'
+    : '<b>🎁 Premio a la constancia:</b> solo cuentan los domingos que has venido. Gane o pierda, quien más viene, más arriba.' + (soloAsist ? '' : ' <span class="chip peach">🏆 = también en el Top 3 de puntos</span>')) +
     (pend ? ` <span class="chip lav">${pend} resultado(s) pendientes de validar</span>` : '');
   $('rank-list').innerHTML = lista.length ? lista.map(s => rankRow(s, modo, me(), acum ? null : S.rankTemp)).join('') + `<button class="btn wa" data-act="waRanking" data-m="${modo}">📲 Compartir ranking por WhatsApp</button>` : '<p class="empty">Aún no hay resultados validados.</p>';
 }
@@ -1121,7 +1123,7 @@ function perfilJugador(m){
 /* ===================== PANEL ADMINISTRADORA ===================== */
 const pendJ = () => { const m = {}; S.resultados.filter(r => r.estado === 'pendiente').forEach(r => m[r.jornadaId] = (m[r.jornadaId] || 0) + 1); return m; };
 const bajasPend = () => S.bajas.filter(b => !b.visto && S.jornadas.some(j => j.id === b.jornadaId && j.estado !== 'cerrada'));
-function nAvisos(){ return bajasPend().length + S.solicitudes.length + Object.keys(pendJ()).length; }
+function nAvisos(){ return bajasPend().length + S.solicitudes.length + Object.keys(pendJ()).length + conflictosPend().length; }
 const FLUJO = j => cuentaParaRanking(j) ? ['abierta', 'en_juego', 'resultados', 'cerrada'] : ['abierta', 'en_juego', 'cerrada'];
 const PASO_TXT = { abierta: 'Inscripción', en_juego: 'Jugando', resultados: 'Resultados', cerrada: 'Cerrada' };
 function siguientePaso(j){
@@ -1141,6 +1143,7 @@ function renderAdmin(){
 function renderAInicio(){
   let h = '';
   const bp = bajasPend(), pj = pendJ(), nPend = Object.values(pj).reduce((a, b) => a + b, 0);
+  { const cf = conflictosPend(); if (cf.length) h += `<button class="al r" data-act="nav" data-v="a-avisos"><span class="ic">⚠️</span><span class="tx">${cf.length === 1 ? '1 resultado que no cuadra' : cf.length + ' resultados que no cuadran'}<small>${cf.slice(0, 2).map(c => esc(nom(c.a)) + (c.b ? ' + ' + esc(nom(c.b)) : '')).join(' · ')}</small></span><span class="go">›</span></button>`; }
   if (bp.length) h += `<button class="al r" data-act="nav" data-v="a-avisos"><span class="ic">⚠️</span><span class="tx">${bp.length === 1 ? '1 baja sin resolver' : bp.length + ' bajas sin resolver'}<small>${bp.slice(0, 2).map(b => esc(nom(b.playerId)) + (b.tardia ? ' · ⏰ última hora' : '')).join(' · ')}</small></span><span class="go">›</span></button>`;
   if (S.solicitudes.length) h += `<button class="al m" data-act="nav" data-v="a-avisos"><span class="ic">👋</span><span class="tx">${S.solicitudes.length} alta${S.solicitudes.length > 1 ? 's' : ''} pendiente${S.solicitudes.length > 1 ? 's' : ''}<small>${S.solicitudes.slice(0, 2).map(x => esc(x.nombre)).join(' · ')}</small></span><span class="go">›</span></button>`;
   h += avisoFaltan(true);
@@ -1168,8 +1171,9 @@ function renderAInicio(){
 /* ----- Avisos (campana) ----- */
 function renderAAvisos(){
   let h = `<div class="dethd"><button class="bk" data-act="nav" data-v="a-inicio">‹</button><div class="tt"><b>🔔 Avisos</b></div></div>`;
-  const bp = bajasPend(), pj = pendJ();
-  if (!bp.length && !S.solicitudes.length && !Object.keys(pj).length) h += `<div class="card center"><p style="font-size:2rem">🎉</p><h2>Todo al día</h2><p class="muted">No tienes nada pendiente.</p></div>`;
+  const bp = bajasPend(), pj = pendJ(), cf = conflictosPend();
+  if (cf.length) h += `<div class="sec-t">⚠️ Resultados que no cuadran (${cf.length})</div>` + cf.map(conflictoCard).join('');
+  if (!bp.length && !S.solicitudes.length && !Object.keys(pj).length && !cf.length) h += `<div class="card center"><p style="font-size:2rem">🎉</p><h2>Todo al día</h2><p class="muted">No tienes nada pendiente.</p></div>`;
   if (bp.length){
     h += `<div class="sec-t">⚠️ Bajas (${bp.length})</div>`;
     h += bp.map(b => { const j = S.jornadas.find(x => x.id === b.jornadaId);
@@ -1348,7 +1352,7 @@ function resultadosHTML(j){
   }
   const pend = rs.filter(r => r.estado === 'pendiente'), ok = rs.filter(r => r.estado === 'aprobado');
   const sinRes = activos(j.id).filter(i => !rs.some(r => r.playerId === i.id));
-  let h = `<div class="card"><h2>${rs.length} de ${activos(j.id).length} enviados</h2>`;
+  let h = conflictosPend().filter(c => c.j.id === j.id).map(conflictoCard).join('') + `<div class="card"><h2>${rs.length} de ${activos(j.id).length} enviados</h2>`;
   h += pend.length ? `<button class="cta" data-act="aprobarTodos">✓ VALIDAR LOS ${pend.length}</button>` + pend.map(r => `<div class="pl2"><span class="num">${rs.indexOf(r) + 1}</span><div class="nm">${esc(nom(r.playerId))}<small>${RES_TXT[r.resultado]} · ${fmtHora(r.ts)}</small></div><button class="btn sm mint" data-act="aprobar" data-id="${r.id}">✓</button><button class="btn sm rose" data-act="borrarRes" data-id="${r.id}">✕</button></div>`).join('') : '<p class="muted">Nada pendiente de validar.</p>';
   if (sinRes.length && ventanaRes(j)) h += `<span class="plazo">${plazoTxt(j).replace('Tienes', 'Tienen')}</span><button class="btn wa" data-act="waRecordar" data-j="${j.id}">📲 Recordar a los ${sinRes.length} que faltan</button>`;
   if (sinRes.length) h += `<div class="sec-t">Faltan (${sinRes.length}) · pónselo tú</div>` + sinRes.map(i => `<div class="pl2"><div class="nm">${esc(nom(i.id))}</div><button class="btn sm mint" data-act="adminRes" data-p="${i.id}" data-r="ganado">Ganó</button><button class="btn sm sec" data-act="adminRes" data-p="${i.id}" data-r="perdido">Perdió</button></div>`).join('');
@@ -1581,7 +1585,7 @@ function renderSheet(){
   if (S.sheet.step === 'lista'){
     if (box.dataset.k !== k){
       box.innerHTML = `<div class="sh"><h2>🏁 ¡Americana terminada!</h2><div class="sub">${esc(jLabel(j))}</div>
-        <div style="background:var(--lav);color:var(--lav-strong);border-radius:14px;padding:10px 12px;margin:8px 0;font-weight:800;line-height:1.5">👤 Busca <u>TU</u> nombre (no el de tu pareja)<br>🎾 Solo el <u>ÚLTIMO</u> partido<br>👥 Los 2 de la pareja lo apuntáis<br>✅ Los +5 por venir los tienes igualmente</div><span class="plazo" style="margin-bottom:10px">${plazoTxt(j)}</span>
+        <div style="background:var(--lav);color:var(--lav-strong);border-radius:14px;padding:10px 12px;margin:8px 0;font-weight:800;line-height:1.5">👥 Busca tu nombre: lo apunta <u>uno</u> por pareja<br>🎾 Solo el <u>ÚLTIMO</u> partido<br>✅ Los +5 por venir los tenéis igualmente</div><span class="plazo" style="margin-bottom:10px">${plazoTxt(j)}</span>
         <input id="sheet-q" placeholder="🔍 Buscar mi nombre…" autocomplete="off" style="margin-bottom:6px"><div id="sheet-list"></div>
         <button class="btn sec" data-act="cerrarHoja">Cerrar</button></div>`;
       box.dataset.k = k;
@@ -1591,32 +1595,112 @@ function renderSheet(){
     return;
   }
   box.dataset.k = k;
-  if (S.sheet.step === 'confirm'){
-    box.innerHTML = `<div class="sh"><h2>¿Eres ${esc(nom(S.sheet.pid))}?</h2><div class="sub">¿Cómo te fue en el <b>último partido</b>?</div>
+  const pid = S.sheet.pid, con = S.sheet.u ? S.sheet.u.find(x => x !== pid) : null;
+  if (S.sheet.step === 'quien'){
+    box.innerHTML = `<div class="sh"><h2>¿Quién eres?</h2><div class="sub">Toca tu nombre</div>
+      ${S.sheet.u.map(x => `<button class="btn" data-act="hojaSoy" data-p="${x}">Soy ${esc(nom(x))}</button>`).join('')}
+      <button class="btn sec" data-act="hojaVolver">Volver</button></div>`;
+  } else if (S.sheet.step === 'confirm'){
+    box.innerHTML = con ? `<div class="sh"><h2>¿Eres ${esc(nom(pid))}?</h2><div class="sub">Vas con <b>${esc(nom(con))}</b>.<br>¿Cómo os fue en el <b>último partido</b>?</div>
+      <button class="btn win" data-act="hojaRes" data-r="ganado">🏆 GANAMOS · +${PTS.ganado - PTS.asistencia} cada uno</button>
+      <button class="btn lose" data-act="hojaRes" data-r="perdido">🤝 Perdimos · +${PTS.perdido - PTS.asistencia} cada uno</button>
+      <button class="btn sec" data-act="hojaVolver">No soy yo</button>
+      <p class="muted center" style="margin-top:12px">Se apunta para los dos. ⏱ La pareja que lo apunta antes gana los empates.</p></div>`
+    : `<div class="sh"><h2>¿Eres ${esc(nom(pid))}?</h2><div class="sub">¿Cómo te fue en el <b>último partido</b>?</div>
       <button class="btn win" data-act="hojaRes" data-r="ganado">🏆 HE GANADO</button>
       <button class="btn lose" data-act="hojaRes" data-r="perdido">🤝 He perdido</button>
       <button class="btn sec" data-act="hojaVolver">No soy yo</button>
       <p class="muted center" style="margin-top:12px">⏱ Quien lo envía antes gana los empates del ranking</p></div>`;
+  } else if (S.sheet.step === 'visto'){
+    const h = apuntoDe(j.id, S.sheet.u || [pid]); if (!h){ S.sheet.step = 'confirm'; return renderSheet(); }
+    const mio = h.quien === pid, avisado = S.sheet.avisado;
+    box.innerHTML = `<div class="sh"><h2>¿Eres ${esc(nom(pid))}?</h2>
+      <div style="background:var(--mint);color:var(--mint-strong);border-radius:16px;padding:16px;text-align:center;margin:10px 0"><div style="font-size:2.4rem">✅</div>
+        <b style="font-size:1.2rem;display:block">${mio ? 'Ya lo apuntaste:' : esc(nom(h.quien).split(' ')[0]) + ' ya lo apuntó:'}</b><span style="font-weight:900;font-size:1.1rem">${NOS_TXT[h.r.resultado] || ''}${con && h.r.resultado !== 'asistencia' ? ` · +${PTS[h.r.resultado] - PTS.asistencia} cada uno` : ''}</span></div>
+      ${avisado ? '<p class="warn" style="text-align:center">📨 Luz ya lo sabe y decidirá.</p>' : ''}
+      <button class="btn sec" data-act="hojaCorrecto">👍 ${mio || avisado ? 'Vale' : 'Correcto'}</button>
+      ${!mio && !avisado && h.r.resultado !== 'asistencia' ? '<button class="btn lose" data-act="hojaNoEs">✋ No es así, avisar a Luz</button>' : ''}
+      <button class="btn sec" data-act="hojaVolver">Volver a la lista</button></div>`;
   } else if (S.sheet.step === 'ok'){
     const r = S.resultados.find(x => x.jornadaId === j.id && x.playerId === S.sheet.pid);
     const orden = r ? resJ(j.id).findIndex(x => x.id === r.id) + 1 : 0;
     box.innerHTML = `<div class="sh center"><div style="font-size:3rem">✅</div><h2>¡Gracias, ${esc(nom(S.sheet.pid).split(' ')[0])}!</h2>
       <p style="font-size:1.2rem;font-weight:800;margin-top:6px">${RES_TXT[S.sheet.res]}${orden ? ` · ${orden}º en enviarlo` : ''}</p>
-      <p class="muted" style="margin-top:6px">Luz lo validará en un momento</p>
+      ${con ? `<p style="font-weight:800;margin-top:4px">Apuntado para ti y para ${esc(nom(con).split(' ')[0])}</p>` : ''}<p class="muted" style="margin-top:6px">Luz lo validará en un momento</p>
       <button class="btn" data-act="hojaRanking" data-c="${j.circuitoId}">Ver cómo va el ranking</button>
       <button class="btn sec" data-act="hojaVolver">Volver a la lista</button>
       <button class="btn sec" data-act="cerrarHoja">Cerrar</button></div>`;
   }
 }
+/* ---------- PAREJAS: un resultado por pareja ---------- */
+function parejaDe(j, pid){
+  const act = new Set(activos(j.id).map(i => i.id));
+  for (const p of (j.pistas || [])) for (const [x, y] of [['a1', 'a2'], ['b1', 'b2']]){
+    if (p[x] === pid && p[y] && act.has(p[y])) return p[y];
+    if (p[y] === pid && p[x] && act.has(p[x])) return p[x];
+  }
+  const yo = activos(j.id).find(i => i.id === pid);
+  if (yo?.parejaId && yo.parejaId !== pid && act.has(yo.parejaId)) return yo.parejaId;
+  return activos(j.id).find(i => i.parejaId === pid && i.id !== pid)?.id || null;
+}
+function unidadesHoja(j){
+  const vistos = new Set(), u = [];
+  activos(j.id).map(i => i.id).filter(pid => S.players[pid]).forEach(pid => {
+    if (vistos.has(pid)) return; vistos.add(pid);
+    const c = parejaDe(j, pid);
+    if (c && S.players[c] && !vistos.has(c)){ vistos.add(c); u.push([pid, c].sort((a, b) => nom(a).localeCompare(nom(b), 'es'))); } else u.push([pid]);
+  });
+  return u.sort((a, b) => nom(a[0]).localeCompare(nom(b[0]), 'es'));
+}
+const resDe = (jid, pid) => S.resultados.find(r => r.jornadaId === jid && r.playerId === pid);
+// Quién apuntó el resultado de la pareja
+function apuntoDe(jid, ids){
+  const rs = ids.map(pid => resDe(jid, pid)).filter(Boolean); if (!rs.length) return null;
+  const r = rs.find(x => x.por !== 'pareja') || rs[0];
+  return { r, quien: r.de || r.playerId };
+}
+const NOS_TXT = { ganado: '🏆 GANASTEIS', perdido: '🤝 PERDISTEIS', asistencia: '📅 Asististeis' };
+// Resultados que no cuadran: avisos de "No es así" + parejas que apuntaron cosas distintas
+function conflictosPend(){
+  const out = [], vistos = new Set();
+  S.conflictos.forEach(c => {
+    const j = S.jornadas.find(x => x.id === c.jid); if (!j) return;
+    const otro = c.con ? resDe(c.jid, c.con) : null, mio = resDe(c.jid, c.pid);
+    const base = (otro && otro.resultado !== 'asistencia' ? otro : mio);
+    out.push({ j, a: c.pid, b: c.con, dA: c.dice, dB: base?.resultado || '—', quienB: base ? (base.de || base.playerId) : c.con, ids: [c.id] });
+    vistos.add(c.jid + '|' + [c.pid, c.con].sort().join());
+  });
+  S.jornadas.filter(j => S.inscritos[j.id] && cuentaParaRanking(j)).forEach(j => unidadesHoja(j).forEach(u => {
+    if (u.length < 2 || vistos.has(j.id + '|' + [...u].sort().join())) return;
+    const [ra, rb] = u.map(pid => resDe(j.id, pid));
+    if (ra && rb && ra.resultado !== 'asistencia' && rb.resultado !== 'asistencia' && ra.resultado !== rb.resultado)
+      out.push({ j, a: u[0], b: u[1], dA: ra.resultado, dB: rb.resultado, quienB: u[1], ids: [] });
+  }));
+  return out;
+}
+function conflictoCard(c){
+  const t = r => r === 'ganado' ? '<b style="color:var(--mint-strong)">🏆 Ganamos</b>' : r === 'perdido' ? '<b style="color:var(--peach-strong)">🤝 Perdimos</b>' : esc(r);
+  return `<div class="card" style="border:3px solid #a32435;background:#fde0e3"><div class="name" style="color:#a32435;font-size:1.1rem">⚠️ Resultado que no cuadra</div>
+    <div class="muted">${esc(jLabel(c.j))} · ${esc(nom(c.a))}${c.b ? ' + ' + esc(nom(c.b)) : ''}</div>
+    <div class="row" style="margin:8px 0"><div class="card" style="margin:0;padding:8px;text-align:center">${esc(nom(c.a).split(' ')[0])} dice<br>${t(c.dA)}</div><div class="card" style="margin:0;padding:8px;text-align:center">${esc(nom(c.quienB || c.b).split(' ')[0])} dice<br>${t(c.dB)}</div></div>
+    <p style="font-weight:800">¿Qué pasó de verdad?</p>
+    <div class="row"><button class="btn mint" data-act="resolverConf" data-j="${c.j.id}" data-a="${c.a}" data-b="${c.b || ''}" data-c="${c.ids.join(',')}" data-r="ganado">Ganaron (+${PTS.ganado - PTS.asistencia} ${c.b ? 'los dos' : ''})</button><button class="btn peach" data-act="resolverConf" data-j="${c.j.id}" data-a="${c.a}" data-b="${c.b || ''}" data-c="${c.ids.join(',')}" data-r="perdido">Perdieron (+${PTS.perdido - PTS.asistencia} ${c.b ? 'los dos' : ''})</button></div></div>`;
+}
+
 function renderSheetList(){
   const j = S.jornadas.find(x => x.id === S.sheet?.jid); const cont = $('sheet-list'); if (!j || !cont) return;
-  const m = me(), q = normTxt(S.sheet.q);
-  let lista = activos(j.id).map(i => i.id).filter(pid => S.players[pid]).sort((a, b) => nom(a).localeCompare(nom(b), 'es'));
-  if (m && lista.includes(m.id)) lista = [m.id, ...lista.filter(x => x !== m.id)];
-  const env = new Set(resJ(j.id).map(r => r.playerId));
-  const vis = lista.filter(pid => !q || normTxt(nom(pid)).includes(q));
-  cont.innerHTML = vis.map(pid => `<div class="pl${m && m.id === pid ? ' yo' : ''}"><span class="n">${esc(nom(pid))}</span>${env.has(pid) ? '<span class="chip mint">✓ enviado</span>' : `<button class="btn sm" data-act="hojaElegir" data-p="${pid}">Apuntar resultado</button>`}</div>`).join('')
-    + `<p class="muted center" style="margin-top:8px">${[...env].filter(x => lista.includes(x)).length} de ${lista.length} enviados</p>`
+  const yo = yoPid(), q = normTxt(S.sheet.q);
+  let us = unidadesHoja(j);
+  const mia = us.find(u => u.includes(yo)); if (mia) us = [mia, ...us.filter(u => u !== mia)];
+  const vis = us.filter(u => !q || u.some(pid => normTxt(nom(pid)).includes(q)));
+  const hechas = us.filter(u => apuntoDe(j.id, u)).length;
+  cont.innerHTML = vis.map(u => {
+    const a = u.includes(yo) ? yo : u[0], b = u.find(x => x !== a), hecho = apuntoDe(j.id, u);
+    return `<div class="pl${u.includes(yo) ? ' yo' : ''}"><span class="n">${esc(nom(a))}${b ? `<small style="display:block;font-weight:700;color:var(--muted);font-size:.85em">+ ${esc(nom(b))}</small>` : ''}</span>${hecho
+      ? `<button class="chip mint" style="border:none;cursor:pointer" data-act="hojaElegir" data-p="${u.join(',')}">✓ Lo apuntó ${esc(nom(hecho.quien).split(' ')[0])}</button>`
+      : `<button class="btn sm" data-act="hojaElegir" data-p="${u.join(',')}">Apuntar</button>`}</div>`;
+  }).join('')
+    + `<p class="muted center" style="margin-top:8px">${hechas} de ${us.length} ${us.some(u => u.length > 1) ? 'parejas' : ''} apuntadas</p>`
     + (!vis.length ? '<p class="empty">No aparece ese nombre. Díselo a Luz.</p>' : '');
 }
 
@@ -1921,19 +2005,19 @@ const MSG_NORMAS = `🎾 *CÓMO APUNTAR EL RESULTADO EN LAS MATINALES* 🎾
 
 Al acabar la americana, abrid la app y os saldrá la lista de jugadores:
 
-1️⃣ Busca *TU nombre* (solo el tuyo, no el de tu pareja ni el de nadie más)
+1️⃣ Busca *tu nombre* (sale junto al de tu pareja)
 2️⃣ Pulsa *HE GANADO* o *HE PERDIDO*
 3️⃣ ¡Listo! ✅
 
 📌 *Importante:*
 • Solo cuenta el *ÚLTIMO PARTIDO* (el de las 13:10 h)
-• *Cada uno apunta el suyo*: los 2 de la pareja tenéis que apuntarlo
+• *Lo apunta uno por pareja* y vale para los dos
 • Tenéis *48 horas*. Después la lista se cierra
 • Quien lo apunta antes gana los empates del ranking ⏱
 
 🏅 *Puntos:*
 • Por venir: *+5* (te lo pongo yo, aunque no apuntes nada)
-• Último partido ganado: *+3*
+• Último partido ganado: *+2*
 • Último partido perdido: *+1*
 
 Si te equivocas, avísame y lo corrijo 😉
@@ -2024,14 +2108,34 @@ const A = {
   verRanking: el => { S.rankCirc = el.dataset.c; S.rankTemp = null; S.view = 'ranking'; doRender(); window.scrollTo(0, 0); },
   abrirLista: el => { cerradasHoja.delete(el.dataset.j); S.sheet = { jid: el.dataset.j, step: 'lista', q: '' }; renderSheet(); },
   cerrarHoja: () => { if (S.sheet) cerradasHoja.add(S.sheet.jid); S.sheet = null; renderSheet(); },
-  hojaElegir: el => { S.sheet.step = 'confirm'; S.sheet.pid = el.dataset.p; renderSheet(); },
-  hojaVolver: () => { S.sheet.step = 'lista'; S.sheet.pid = null; renderSheet(); },
+  hojaElegir(el){
+    const u = el.dataset.p.split(','), j = S.jornadas.find(x => x.id === S.sheet.jid), yo = yoPid();
+    S.sheet.u = u; S.sheet.avisado = false;
+    S.sheet.pid = u.length === 1 ? u[0] : u.includes(yo) ? yo : null;
+    S.sheet.step = !S.sheet.pid ? 'quien' : apuntoDe(j.id, u) ? 'visto' : 'confirm'; renderSheet();
+  },
+  hojaSoy(el){ const j = S.jornadas.find(x => x.id === S.sheet.jid); S.sheet.pid = el.dataset.p; S.sheet.step = apuntoDe(j.id, S.sheet.u) ? 'visto' : 'confirm'; renderSheet(); },
+  hojaVolver: () => { S.sheet.step = 'lista'; S.sheet.pid = null; S.sheet.u = null; renderSheet(); },
+  hojaCorrecto(){ try { localStorage.setItem('yoPid', S.sheet.pid); } catch (e){} A.hojaVolver(); },
+  async hojaNoEs(){
+    const j = S.jornadas.find(x => x.id === S.sheet.jid), pid = S.sheet.pid, con = S.sheet.u.find(x => x !== pid) || null, h = apuntoDe(j.id, S.sheet.u);
+    if (!h || !confirm(`¿Avisar a Luz de que NO ${h.r.resultado === 'ganado' ? 'ganasteis' : 'perdisteis'}?`)) return;
+    try {
+      await setDoc(doc(db, 'conflictos', `${j.id}_${pid}`), { jid: j.id, pid, con, dice: h.r.resultado === 'ganado' ? 'perdido' : 'ganado', ts: serverTimestamp() });
+      try { localStorage.setItem('yoPid', pid); } catch (e){}
+      S.sheet.avisado = true; renderSheet(); toast('📨 Aviso enviado a Luz', 3000);
+    } catch (e){ toast(e?.code?.includes('permission') ? 'Ya habías avisado a Luz.' : errMsg(e), 4000); }
+  },
   hojaRanking: el => { cerradasHoja.add(S.sheet.jid); S.sheet = null; renderSheet(); A.verRanking(el); },
   async hojaRes(el){
     const j = S.jornadas.find(x => x.id === S.sheet.jid), pid = S.sheet.pid, r = el.dataset.r, m = me();
     if (S.resultados.some(x => x.jornadaId === j.id && x.playerId === pid)){ toast('Ese nombre ya tiene resultado'); return A.hojaVolver(); }
+    const con = (S.sheet.u || []).find(x => x !== pid);
     try {
-      await setDoc(doc(db, 'resultados', `${j.id}_${pid}`), { jornadaId: j.id, temporadaId: j.temporadaId ?? null, playerId: pid, resultado: r, estado: 'pendiente', por: m && m.id === pid ? 'jugador' : 'lista', ts: serverTimestamp() });
+      const b = writeBatch(db), base = { jornadaId: j.id, temporadaId: j.temporadaId ?? null, resultado: r, estado: 'pendiente', de: pid, ts: serverTimestamp() };
+      b.set(doc(db, 'resultados', `${j.id}_${pid}`), { ...base, playerId: pid, por: m && m.id === pid ? 'jugador' : 'lista' });
+      if (con && !resDe(j.id, con)) b.set(doc(db, 'resultados', `${j.id}_${con}`), { ...base, playerId: con, por: 'pareja' });
+      await b.commit();
       try { localStorage.setItem('yoPid', pid); } catch (e){}
       S.sheet.step = 'ok'; S.sheet.res = r; renderSheet();
     } catch (e){ toast(e?.code?.includes('permission') ? 'Ese nombre ya tiene resultado o la lista ya está cerrada.' : errMsg(e), 4000); A.hojaVolver(); }
@@ -2231,6 +2335,16 @@ const A = {
   },
 
   /* --- admin: resultados / asistencia --- */
+  async resolverConf(el){
+    const { j: jid, a, b, c, r } = el.dataset, j = S.jornadas.find(x => x.id === jid);
+    try {
+      const bt = writeBatch(db);
+      [a, b].filter(Boolean).forEach(pid => { const ex = resDe(jid, pid);
+        bt.set(doc(db, 'resultados', `${jid}_${pid}`), { jornadaId: jid, temporadaId: j?.temporadaId ?? null, playerId: pid, resultado: r, estado: 'aprobado', por: 'admin', ts: ex?.ts || serverTimestamp() }); });
+      [...(c ? c.split(',') : []), `${jid}_${a}`, ...(b ? [`${jid}_${b}`] : [])].forEach(id => bt.delete(doc(db, 'conflictos', id)));
+      await bt.commit(); toast(`✅ ${nom(a)}${b ? ' y ' + nom(b) : ''}: ${r === 'ganado' ? 'ganaron' : 'perdieron'}`);
+    } catch (e){ toast(errMsg(e)); }
+  },
   async aprobar(el){ try { await updateDoc(doc(db, 'resultados', el.dataset.id), { estado: 'aprobado' }); } catch (e){ toast(errMsg(e)); } },
   async aprobarTodos(){
     const pend = resJ(S.admJ).filter(r => r.estado === 'pendiente');
@@ -2346,12 +2460,24 @@ const A = {
 
 async function ponerResAdmin(pid, r){
   const j = S.jornadas.find(x => x.id === S.admJ); if (!j) return;
-  try { await setDoc(doc(db, 'resultados', `${j.id}_${pid}`), { jornadaId: j.id, temporadaId: j.temporadaId ?? null, playerId: pid, resultado: r, estado: 'aprobado', por: 'admin', ts: serverTimestamp() }); toast(`${nom(pid)}: ${RES_TXT[r]}`); }
+  const con = r !== 'asistencia' ? parejaDe(j, pid) : null, conLibre = con && !resDe(j.id, con);
+  try {
+    const b = writeBatch(db), d = { jornadaId: j.id, temporadaId: j.temporadaId ?? null, resultado: r, estado: 'aprobado', por: 'admin', ts: serverTimestamp() };
+    b.set(doc(db, 'resultados', `${j.id}_${pid}`), { ...d, playerId: pid });
+    if (conLibre) b.set(doc(db, 'resultados', `${j.id}_${con}`), { ...d, playerId: con });
+    await b.commit(); toast(`${nom(pid)}${conLibre ? ' y ' + nom(con) : ''}: ${RES_TXT[r]}`); }
   catch (e){ toast(errMsg(e)); }
 }
 
 const CH = {
-  async cambiarRes(el){ try { await updateDoc(doc(db, 'resultados', el.dataset.id), { resultado: el.value }); toast('Resultado cambiado'); } catch (e){ toast(errMsg(e)); } },
+  async cambiarRes(el){
+    const r = S.resultados.find(x => x.id === el.dataset.id), j = r && S.jornadas.find(x => x.id === r.jornadaId);
+    const con = j && el.value !== 'asistencia' ? parejaDe(j, r.playerId) : null, rc = con && resDe(j.id, con);
+    try {
+      const b = writeBatch(db); b.update(doc(db, 'resultados', el.dataset.id), { resultado: el.value });
+      const tambien = rc && rc.resultado !== 'asistencia' && rc.resultado !== el.value; if (tambien) b.update(doc(db, 'resultados', rc.id), { resultado: el.value });
+      await b.commit(); toast(tambien ? `Cambiado también a ${nom(con)}` : 'Resultado cambiado');
+    } catch (e){ toast(errMsg(e)); } },
   async jMin(el){ const v = parseInt(el.value); if (!v) return; try { await updateDoc(doc(db, 'jornadas', S.admJ), { minPistas: v }); toast('Mínimo guardado'); } catch (e){ toast(errMsg(e)); } },
   async jRondas(el){ const v = parseInt(el.value); if (!v) return; const j = S.jornadas.find(x => x.id === S.admJ); try { await updateDoc(doc(db, 'jornadas', j.id), { rondas: v, finMs: finMs({ ...j, rondas: v }) }); toast('Rondas guardadas'); } catch (e){ toast(errMsg(e)); } },
   async jMinR(el){ const v = parseInt(el.value); if (!v) return; const j = S.jornadas.find(x => x.id === S.admJ); try { await updateDoc(doc(db, 'jornadas', j.id), { minRonda: v, finMs: finMs({ ...j, minRonda: v }) }); toast('Minutos guardados'); } catch (e){ toast(errMsg(e)); } },
